@@ -39,6 +39,100 @@ function runSeed() {
     console.log('[+] Создан админ: admin@modul-haus.ru / admin123');
   }
 
+  // Создание демонстрационного аккаунта клиента для тестирования личного кабинета
+  let demoClient = db.prepare('SELECT id FROM users WHERE email = ? OR phone = ?').get('client@modul-haus.ru', '+79990000000');
+  if (!demoClient) {
+    const clientPassHash = bcrypt.hashSync('client123', 10);
+    const clientRes = db.prepare(`
+      INSERT INTO users (email, phone, name, password_hash, role)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('client@modul-haus.ru', '+79990000000', 'Алексей Смирнов', clientPassHash, 'client');
+    demoClient = { id: clientRes.lastInsertRowid };
+    console.log('[+] Создан демо-клиент: +7 (999) 000-00-00 (client@modul-haus.ru) / client123');
+  }
+
+  // Создание образцовых заказов для демонстрации трекера производства в личном кабинете
+  const existingDemoOrders = db.prepare('SELECT COUNT(*) as c FROM orders WHERE user_id = ?').get(demoClient.id);
+  if (existingDemoOrders.c === 0) {
+    const insertOrder = db.prepare(`
+      INSERT INTO orders (
+        order_number, user_id, customer_name, customer_phone, customer_email,
+        customer_address, customer_comment, items_json, total_price,
+        payment_status, status, payment_id, payment_provider, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    insertOrder.run(
+      'DK-20261101-1042',
+      demoClient.id,
+      'Алексей Смирнов',
+      '+79990000000',
+      'client@modul-haus.ru',
+      'Свердловская обл., пос. Сысерть, ул. Лесная 14',
+      'Фундамент свайный готов, подъездные пути свободны для манипулятора',
+      JSON.stringify([{
+        title: 'Модульный дом «Алтай» 9×9,5 м',
+        price: 4439000,
+        quantity: 1,
+        details: { 'Габариты': '9×9,5 м', 'Цвет': 'Бронза', 'Пристрой': 'Крыльцо 2×3 м' },
+        image: '/houses/altai/9x9.5__p4259000/bronze/main.jpg'
+      }]),
+      4439000,
+      'PAID',
+      'IN_PRODUCTION',
+      'YK-DEMO-991042',
+      'yookassa_sandbox',
+      '2026-11-01 10:30:00'
+    );
+
+    insertOrder.run(
+      'DK-20261104-2190',
+      demoClient.id,
+      'Алексей Смирнов',
+      '+79990000000',
+      'client@modul-haus.ru',
+      'Свердловская обл., пос. Сысерть, ул. Лесная 14',
+      'Оплата принята банком, согласование даты начала сборки',
+      JSON.stringify([{
+        title: 'Модульная баня «Урал» 2.3×6 м',
+        price: 946000,
+        quantity: 1,
+        details: { 'Габариты': '2.3×6 м', 'Цвет': 'Графит', 'Терраса': 'Крытая 12 м²' },
+        image: '/saunas/ural/2.3x6__p694000/bronze/main.jpg'
+      }]),
+      946000,
+      'PAID',
+      'PAID',
+      'YK-DEMO-992190',
+      'yookassa_sandbox',
+      '2026-11-04 14:15:00'
+    );
+
+    insertOrder.run(
+      'DK-20261015-0811',
+      demoClient.id,
+      'Алексей Смирнов',
+      '+79990000000',
+      'client@modul-haus.ru',
+      'г. Екатеринбург, КП Заповедник, уч. 48',
+      'Дом сдан и принят заказчиком по акту приема-передачи',
+      JSON.stringify([{
+        title: 'Модульный дом «Таганай» 5×6 м',
+        price: 1891000,
+        quantity: 1,
+        details: { 'Габариты': '5×6 м', 'Цвет': 'Бежевый', 'Терраса': 'Крытая 2×6 м' },
+        image: '/houses/taganay/5x6__p1622000/beige/main.jpg'
+      }]),
+      1891000,
+      'PAID',
+      'COMPLETED',
+      'YK-DEMO-990811',
+      'yookassa_sandbox',
+      '2026-10-15 16:45:00'
+    );
+    console.log('[+] Создано 3 демонстрационных заказа для личного кабинета и админки');
+  }
+
   // 2. Categories
   const insertCat = db.prepare('INSERT OR IGNORE INTO categories (name, slug, sort_order) VALUES (?, ?, ?)');
   insertCat.run('Модульные дома', 'houses', 1);

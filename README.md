@@ -104,8 +104,10 @@ docker compose up --build
 - Каталог домов: **http://localhost:3030/houses.html**
 - Каталог бань: **http://localhost:3030/saunas.html**
 - Личный кабинет клиента: **http://localhost:3030/profile.html** (или `/account`)
+  - *Демо-аккаунт клиента:* `client@modul-haus.ru` или `+7 (999) 000-00-00`, пароль `client123` (с предзаполненной историей заказов и трекером производства).
 - Платежный шлюз: **http://localhost:3030/payment.html**
-- Панель администратора: **http://localhost:3030/admin.html** (логин `admin@doka.local` или `admin@modul-haus.ru`, пароль `admin123`)
+- Панель администратора: **http://localhost:3030/admin.html**
+  - *Логин:* `admin@modul-haus.ru` (или `admin@doka.local`), пароль `admin123`.
 - Карта архитектуры (Archify): **http://localhost:3030/architecture**
 - Интерактивная документация REST API: **http://localhost:3030/api-docs**
 
