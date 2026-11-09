@@ -37,7 +37,7 @@ jobs:
       - name: Wait for server to start
         run: npx wait-on http://localhost:3030/api/health --timeout 15000
 
-      - name: Run all automated tests (19 tests)
+      - name: Run all automated tests (25 tests)
         run: npm run test:all
 
   docker:
