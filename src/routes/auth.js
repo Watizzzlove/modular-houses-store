@@ -28,6 +28,22 @@ function getSetting(key) {
 // Хранятся 5 минут, после чего сгорают
 const verificationSessions = new Map();
 
+// Защита от спама и брутфорса паролей (In-Memory Rate Limiting)
+const rateLimitMap = new Map();
+
+function checkRateLimit(key, maxAttempts, windowMs) {
+  if (process.env.NODE_ENV === 'test') return true;
+  const now = Date.now();
+  const record = rateLimitMap.get(key) || { count: 0, resetAt: now + windowMs };
+  if (now > record.resetAt) {
+    record.count = 0;
+    record.resetAt = now + windowMs;
+  }
+  record.count += 1;
+  rateLimitMap.set(key, record);
+  return record.count <= maxAttempts;
+}
+
 // Приведение любого введенного телефона к стандартному формату +7XXXXXXXXXX
 function normalizePhone(phone) {
   if (!phone) return null;
@@ -49,6 +65,12 @@ router.post('/send-push-code', async (req, res) => {
   const cleanPhone = normalizePhone(phone);
   if (!cleanPhone || cleanPhone.replace(/\D/g, '').length < 11) {
     return res.status(400).json({ error: 'Укажите корректный номер телефона РФ (например: +7 999 123-45-67)' });
+  }
+
+  // Ограничение частоты запросов Push-кодов (не более 10 запросов за 5 минут)
+  const clientIp = req.ip || (req.connection && req.connection.remoteAddress) || 'ip';
+  if (!checkRateLimit(`push:${clientIp}:${cleanPhone}`, 10, 5 * 60 * 1000)) {
+    return res.status(429).json({ error: 'Слишком много запросов кода. Пожалуйста, подождите несколько минут.' });
   }
 
   // Проверяем, не занят ли уже такой номер
@@ -253,6 +275,12 @@ router.post('/login', (req, res) => {
   const identifier = (login || email || phone || '').trim();
   if (!identifier || !password) {
     return res.status(400).json({ error: 'Укажите email/телефон и пароль' });
+  }
+
+  // Защита от перебора паролей (брутфорса)
+  const clientIp = req.ip || (req.connection && req.connection.remoteAddress) || 'ip';
+  if (!checkRateLimit(`login:${clientIp}`, 15, 10 * 60 * 1000)) {
+    return res.status(429).json({ error: 'Слишком много попыток входа. Пожалуйста, попробуйте через 10 минут.' });
   }
 
   const cleanIdent = identifier.toLowerCase();
