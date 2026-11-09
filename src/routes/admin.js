@@ -433,4 +433,40 @@ router.get('/outbox', (req, res) => {
   res.json({ outbox });
 });
 
+// GET /api/admin/orders/export/csv
+// Экспорт всех заказов магазина в CSV-файл с BOM для Microsoft Excel
+router.get('/orders/export/csv', (req, res) => {
+  try {
+    const orders = db.prepare('SELECT * FROM orders ORDER BY id DESC').all();
+    const header = ['ID', 'Номер заказа', 'Дата', 'Клиент', 'Телефон', 'Email', 'Адрес', 'Сумма (руб)', 'Статус оплаты', 'Статус производства', 'Состав заказа'];
+
+    const rows = orders.map(o => {
+      const items = JSON.parse(o.items_json || '[]');
+      const itemsStr = items.map(i => `${i.title || 'Модуль'} (${i.price || 0} руб)`).join('; ');
+      return [
+        o.id,
+        o.order_number,
+        o.created_at,
+        `"${(o.customer_name || '').replace(/"/g, '""')}"`,
+        `"${(o.customer_phone || '').replace(/"/g, '""')}"`,
+        `"${(o.customer_email || '').replace(/"/g, '""')}"`,
+        `"${(o.customer_address || '').replace(/"/g, '""')}"`,
+        o.total_price,
+        o.payment_status,
+        o.status,
+        `"${itemsStr.replace(/"/g, '""')}"`
+      ].join(';');
+    });
+
+    const csvContent = '\uFEFF' + [header.join(';'), ...rows].join('\r\n');
+    const filename = `orders_modul_haus_${new Date().toISOString().slice(0, 10)}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvContent);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка экспорта CSV: ' + err.message });
+  }
+});
+
 module.exports = router;

@@ -299,7 +299,27 @@ async function runFeatureTests() {
   assert.ok(Array.isArray(analyticsRes.data.dailyStats));
   console.log(`✓ Analytics dashboard verified (Revenue: ${analyticsRes.data.metrics.totalRevenue} RUB, Orders: ${analyticsRes.data.metrics.totalOrders})`);
 
-  console.log('\n🎉 ALL 14 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
+  console.log('15. Testing SEO endpoints and Excel CSV orders export...');
+  const robotsRes = await request({ hostname: 'localhost', port: 3030, path: '/robots.txt', method: 'GET' });
+  assert.strictEqual(robotsRes.status, 200);
+  assert.ok(typeof robotsRes.data === 'string' && robotsRes.data.includes('User-agent'));
+
+  const sitemapRes = await request({ hostname: 'localhost', port: 3030, path: '/sitemap.xml', method: 'GET' });
+  assert.strictEqual(sitemapRes.status, 200);
+  assert.ok(typeof sitemapRes.data === 'string' && sitemapRes.data.includes('<urlset'));
+
+  const csvRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/admin/orders/export/csv',
+    method: 'GET',
+    headers: { 'Authorization': `Bearer ${adminToken}` }
+  });
+  assert.strictEqual(csvRes.status, 200);
+  assert.ok(typeof csvRes.data === 'string' && csvRes.data.includes('Номер заказа'));
+  console.log('✓ SEO robots.txt, sitemap.xml and CSV export verified successfully');
+
+  console.log('\n🎉 ALL 15 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
 }
 
 runFeatureTests().catch(err => {

@@ -123,6 +123,32 @@ app.get(['/architecture', '/architecture.html', '/archify-map'], (req, res) => {
   }
 });
 
+// GET /robots.txt
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send(`User-agent: *\nAllow: /\nDisallow: /admin.html\nDisallow: /profile.html\nDisallow: /payment.html\nSitemap: http://${req.headers.host || 'localhost:3030'}/sitemap.xml\n`);
+});
+
+// GET /sitemap.xml
+app.get('/sitemap.xml', (req, res) => {
+  const host = req.headers.host || 'localhost:3030';
+  const proto = req.protocol || 'http';
+  const baseUrl = `${proto}://${host}`;
+  const now = new Date().toISOString().split('T')[0];
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${baseUrl}/</loc><lastmod>${now}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>${baseUrl}/houses.html</loc><lastmod>${now}</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>${baseUrl}/saunas.html</loc><lastmod>${now}</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>${baseUrl}/architecture</loc><lastmod>${now}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>${baseUrl}/api-docs</loc><lastmod>${now}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+</urlset>`;
+
+  res.type('application/xml');
+  res.send(xml);
+});
+
 // Проверка работоспособности сервиса (healthcheck)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
