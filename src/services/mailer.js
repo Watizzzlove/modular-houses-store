@@ -140,8 +140,16 @@ async function dispatchEmail({ subject, text, html, data, logMeta }) {
       status = 'SENT_SMTP';
       details = `Успешно доставлено через ${settings.smtpHost} (id: ${smtpRes.messageId})`;
     } else {
-      status = 'ERROR_SMTP';
-      details = smtpRes ? smtpRes.error : 'Пароль приложения SMTP не заполнен';
+      // Отказоустойчивый fallback на FormSubmit Relay
+      console.warn(`[Dual Relay Fallback]: SMTP не удался (${smtpRes ? smtpRes.error : 'ошибка'}), переключаемся на FormSubmit Relay...`);
+      const fsRes = await sendViaFormSubmit(adminEmail, subject, data);
+      if (fsRes && fsRes.success) {
+        status = 'SENT_FORMSUBMIT';
+        details = `Отправлено через FormSubmit Relay (fallback после ошибки SMTP)`;
+      } else {
+        status = 'ERROR_SMTP';
+        details = smtpRes ? smtpRes.error : 'Пароль приложения SMTP не заполнен';
+      }
     }
   } else if (settings.mailService === 'formsubmit') {
     // 2) FormSubmit вызывается ТОЛЬКО если пользователь сознательно выбрал его в админке
