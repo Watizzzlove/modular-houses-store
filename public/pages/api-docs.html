@@ -347,6 +347,7 @@
       <a href="#patch-order-status" class="sidebar-link"><span class="method-tag patch">PATCH</span> /api/orders/:id/status</a>
       <a href="#get-admin-outbox" class="sidebar-link"><span class="method-tag get">GET</span> /api/admin/outbox</a>
       <a href="#post-test-mail" class="sidebar-link"><span class="method-tag post">POST</span> .../settings/test-mail</a>
+      <a href="#post-test-telegram" class="sidebar-link"><span class="method-tag post">POST</span> .../settings/test-telegram</a>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -584,6 +585,16 @@ terraceType: "covered"</div>
             <span class="endpoint-auth-badge">Требуется JWT Admin</span>
           </div>
           <div class="endpoint-desc">Проверка подключения к SMTP серверу (Mail.ru, Yandex) и отправка проверочного тестового письма.</div>
+        </div>
+
+        <!-- POST /api/admin/settings/test-telegram -->
+        <div class="endpoint-card" id="post-test-telegram">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/admin/settings/test-telegram</span>
+            <span class="endpoint-auth-badge">Требуется JWT Admin</span>
+          </div>
+          <div class="endpoint-desc">Проверка подключения к Telegram Bot API и отправка проверочного сообщения в чат или канал.</div>
         </div>
       </section>
     </main>
