@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+package-lock.json.backup
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Cache & artifacts
+.cache/
+tmp/

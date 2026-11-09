@@ -1,0 +1,14 @@
+{
+  "0": "package.json",
+  "1": "database.js",
+  "2": "server.js",
+  "3": "routes/auth.js",
+  "4": "orders.js",
+  "5": "routes/admin.js",
+  "6": "api.test.js",
+  "7": "app.js",
+  "8": "scripts",
+  "9": "js/admin.js",
+  "10": "cart.js",
+  "11": "js/configurator.js"
+}

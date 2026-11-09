@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Модульные бани — MODUL.HAUS | Каталог и Конструктор</title>
+  <meta name="description" content="Модульные бани созданные для вашего уюта и комфорта. Под ключ за 30 дней с доставкой по всей РФ. Соберите проект в конфигураторе.">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- SITE HEADER -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="brand-logo">MODUL.HAUS</a>
+
+      <nav class="nav-pill-menu">
+        <a href="/houses.html">Дома</a>
+        <a href="/saunas.html" class="is-active">Бани</a>
+        <a href="/#projects">Этапы работы</a>
+        <a href="/#projects">Отзывы</a>
+        <a href="#lead-form">Контакты</a>
+        <a href="/#stats">О нас</a>
+      </nav>
+
+      <div class="header-right-actions">
+        <a href="tel:88006003344" class="header-phone">8 (800) 600-33-44</a>
+        <a href="#lead-form" class="btn-header-cta">Оставить заявку</a>
+        
+        <button type="button" class="btn-cart-floating" data-cart-open aria-label="Открыть корзину">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span class="cart-btn-text">Корзина</span>
+          <span class="cart-pill-count" data-cart-badge style="display: none;">0</span>
+        </button>
+
+        <button type="button" class="burger-btn" data-burger-btn aria-label="Открыть мобильное меню">
+          <span class="burger-bar"></span>
+          <span class="burger-bar"></span>
+          <span class="burger-bar"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER NAVIGATION -->
+  <div class="drawer-backdrop" data-drawer-backdrop></div>
+  <aside class="mobile-nav-drawer" data-mobile-drawer aria-label="Мобильное меню">
+    <div class="mobile-drawer-top">
+      <div class="mobile-drawer-logo">MODUL.HAUS</div>
+      <button type="button" class="mobile-drawer-close" data-drawer-close aria-label="Закрыть меню">&times;</button>
+    </div>
+    <div class="mobile-nav-links">
+      <a href="/houses.html" class="mobile-nav-link">Дома</a>
+      <a href="/saunas.html" class="mobile-nav-link is-active">Бани</a>
+      <a href="/#projects" class="mobile-nav-link">Популярные проекты</a>
+      <a href="/#stats" class="mobile-nav-link">О нас</a>
+      <a href="#lead-form" class="mobile-nav-link">Контакты</a>
+    </div>
+    <div class="mobile-drawer-bottom">
+      <a href="tel:88006003344" class="mobile-phone-link">8 (800) 600-33-44</a>
+      <a href="#lead-form" class="mobile-btn-cta">Оставить заявку</a>
+    </div>
+  </aside>
+
+  <main>
+    <!-- 1 ЭКРАН (HERO - SCREENSHOT 3) -->
+    <section class="hero-screen hero-saunas-bg">
+      <div class="container hero-content-wrap">
+        <div class="page-hero-title-block">
+          <h1 class="page-hero-main-word">Модульные бани</h1>
+          <div class="page-hero-sub-text">
+            созданные для вашего<br>уюта и комфорта
+          </div>
+        </div>
+
+        <div class="hero-bottom-row">
+          <div class="glass-pill-badge">
+            Под ключ за 30 дней с доставкой по всей РФ
+          </div>
+
+          <div class="hero-cta-buttons-right">
+            <a href="#lead-form" class="btn-hero-orange">Оставить заявку</a>
+            <a href="#configurator" class="btn-hero-orange">Смотреть проекты</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- КОНСТРУКТОР МОДУЛЬНЫХ БАНЬ (СРАЗУ ПОД ГЛАВНЫМ ЭКРАНОМ) -->
+    <section class="configurator-wrapper-section" id="configurator">
+      <div class="container">
+        <div class="configurator-section-header">
+          <h2 class="configurator-section-title">Конструктор модульных бань</h2>
+          <div class="configurator-section-subtitle">
+            Выберите размер, цвет отделки, крыльцо или террасу с мгновенным расчётом стоимости и галереей фотографий
+          </div>
+        </div>
+
+        <!-- Переключатель серий бань -->
+        <div class="hc-series-tabs" data-series-tabs>
+          <button type="button" class="hc-series-tab is-active" data-series-slug="klassika">Серия «Классика»</button>
+          <button type="button" class="hc-series-tab" data-series-slug="taiga">Серия «Тайга»</button>
+          <button type="button" class="hc-series-tab" data-series-slug="taganay">Серия «Таганай»</button>
+          <button type="button" class="hc-series-tab" data-series-slug="ural">Серия «Урал»</button>
+        </div>
+
+        <!-- WIDGET ROOT -->
+        <div class="hc-root" data-hc-root>
+          <div class="hc-layout">
+            <!-- Left: Stage & Gallery -->
+            <section class="hc-viewer" aria-label="Выбранный проект бани">
+              <div class="hc-stage" data-stage tabindex="0" aria-label="Галерея проекта" aria-live="polite">
+                <div class="hc-stage-content" data-stage-content></div>
+                <div class="hc-gallery-loading" data-gallery-loading aria-hidden="true">
+                  <span class="hc-spinner"></span>
+                  <span>Загружаем фотографии...</span>
+                </div>
+                <button class="hc-gallery-arrow hc-gallery-arrow--prev" type="button" data-action="previous-slide" aria-label="Предыдущее фото">&#8249;</button>
+                <button class="hc-gallery-arrow hc-gallery-arrow--next" type="button" data-action="next-slide" aria-label="Следующее фото">&#8250;</button>
+                <div class="hc-gallery-counter" data-gallery-counter>1 / 1</div>
+              </div>
+
+              <!-- Thumbnails -->
+              <div class="hc-thumbnails" data-thumbnails aria-label="Миниатюры проекта"></div>
+
+              <div class="hc-project-meta">
+                <p class="hc-eyebrow">Серия проекта</p>
+                <h3 class="hc-project-title" data-project-title>Баня «Классика»</h3>
+              </div>
+            </section>
+
+            <!-- Right: Options & Pricing Panel -->
+            <aside class="hc-panel" aria-label="Параметры бани">
+              <!-- Step 1: Size -->
+              <section class="hc-filter-section">
+                <div class="hc-step-heading">
+                  <span class="hc-step-number">1</span>
+                  <h3>Размер бани</h3>
+                </div>
+                <div class="hc-select-wrap">
+                  <select class="hc-select" id="hc-size-select" data-size-select aria-label="Размер бани"></select>
+                </div>
+              </section>
+
+              <!-- Step 2: Color -->
+              <section class="hc-filter-section" data-color-section>
+                <div class="hc-step-heading">
+                  <span class="hc-step-number">2</span>
+                  <h3>Цвет отделки фасада</h3>
+                </div>
+                <div class="hc-choice-grid hc-choice-grid--colors" data-color-options></div>
+              </section>
+
+              <!-- Step 3: Entrance -->
+              <section class="hc-filter-section" data-entrance-section>
+                <div class="hc-step-heading">
+                  <span class="hc-step-number">3</span>
+                  <h3>Входная группа</h3>
+                </div>
+                <div class="hc-choice-grid" data-entrance-options></div>
+              </section>
+
+              <!-- Step 4: Terrace Type -->
+              <section class="hc-filter-section" data-terrace-type-section hidden>
+                <div class="hc-step-heading">
+                  <span class="hc-step-number">4</span>
+                  <h3>Исполнение террасы</h3>
+                </div>
+                <div class="hc-choice-grid" data-terrace-type-options></div>
+              </section>
+
+              <!-- Step 5: Extension Size -->
+              <section class="hc-filter-section" data-extension-size-section hidden>
+                <div class="hc-step-heading">
+                  <span class="hc-step-number" data-extension-step-number>4</span>
+                  <h3 data-extension-size-title>Размер террасы</h3>
+                </div>
+                <div class="hc-choice-grid" data-extension-size-options></div>
+              </section>
+
+              <!-- Summary & Cart -->
+              <section class="hc-summary" aria-label="Итоговый состав">
+                <p class="hc-summary-label">Итоговая стоимость проекта</p>
+                <div class="hc-summary-price" data-summary-price>0 ₽</div>
+
+                <dl class="hc-summary-list">
+                  <div><dt>Тип строения</dt><dd data-summary-type>Модульная баня</dd></div>
+                  <div><dt>Серия</dt><dd data-summary-series>Классика</dd></div>
+                  <div><dt>Габариты</dt><dd data-summary-size>—</dd></div>
+                  <div><dt>Входная группа</dt><dd data-summary-entrance>Без террасы</dd></div>
+                  <div><dt>Цвет фасада</dt><dd data-summary-color>Бронза</dd></div>
+                </dl>
+
+                <p class="hc-summary-note">
+                  В стоимость входит парная, помывочная, комната отдыха, дровяная печь с каменкой и дымоходом.
+                </p>
+
+                <div class="hc-actions">
+                  <button type="button" class="hc-button hc-button--primary hc-btn-glow" data-cta data-action="calculation">
+                    <span>Получить расчёт</span>
+                  </button>
+                  <button type="button" class="hc-button hc-button--secondary" data-hc-add-to-cart>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right: 8px;">
+                      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                      <line x1="3" y1="6" x2="21" y2="6"></line>
+                      <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                    <span>Добавить в корзину</span>
+                  </button>
+                </div>
+              </section>
+            </aside>
+          </div>
+          <div class="hc-fatal" data-fatal hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 БЛОК (LEAD FORM BANNER - SCREENSHOT 4) -->
+    <section class="lead-banner-section reveal-on-scroll" id="lead-form">
+      <div class="container">
+        <div class="lead-banner-card">
+          <div class="lead-banner-left">
+            <h2 class="lead-banner-title">
+              Хотите оформить заказ<br>или возникли вопросы?
+            </h2>
+            <p class="lead-banner-subtitle">
+              Оставьте заявку, и мы свяжемся с вами в ближайшее время
+            </p>
+          </div>
+
+          <form class="lead-banner-form" id="saunasLeadForm">
+            <div class="lead-inputs-row">
+              <input type="text" name="name" class="lead-input-pill" placeholder="Ваше имя" required>
+              <input type="tel" name="phone" class="lead-input-pill" placeholder="Номер телефона" required>
+            </div>
+            <button type="submit" class="lead-btn-submit">Отправить</button>
+            <div class="lead-form-feedback" id="saunasLeadFeedback">
+              Спасибо! Заявка принята, наш менеджер свяжется с вами в течение 15 минут.
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- CART DRAWER OVERLAY -->
+  <div class="cart-drawer-overlay" data-cart-overlay aria-modal="true" role="dialog">
+    <div class="cart-drawer-panel">
+      <div class="cart-drawer-header">
+        <div class="cart-drawer-title">Корзина покупок</div>
+        <button type="button" class="cart-close-btn" data-cart-close aria-label="Закрыть">&times;</button>
+      </div>
+      <div class="cart-drawer-body" data-cart-items-container>
+        <div class="cart-empty-state" data-cart-empty>
+          <div class="cart-empty-icon" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+          </div>
+          <div class="cart-empty-title">Ваша корзина пуста</div>
+          <p class="cart-empty-sub">Выберите понравившийся проект в каталоге или настройте его в конструкторе</p>
+        </div>
+        <div class="cart-items-list" data-cart-items></div>
+      </div>
+      <div class="cart-drawer-footer" data-cart-footer style="display: none;">
+        <div class="cart-total-row">
+          <span class="cart-total-label">Итого:</span>
+          <span class="cart-total-val" data-cart-total>0 ₽</span>
+        </div>
+        <button type="button" class="cart-checkout-btn" data-cart-checkout>Оформить заказ и оплатить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT MODAL OVERLAY -->
+  <div class="checkout-modal-overlay" data-checkout-modal aria-modal="true" role="dialog" aria-hidden="true">
+    <div class="checkout-modal-card">
+      <div class="checkout-modal-header">
+        <div>
+          <h3 class="checkout-modal-title">Оформление заказа</h3>
+          <p class="checkout-modal-sub">Заполните контактные данные для доставки и тестовой оплаты</p>
+        </div>
+        <button type="button" class="checkout-close-btn" data-checkout-close aria-label="Закрыть">✕</button>
+      </div>
+      <div class="checkout-order-summary" data-checkout-summary></div>
+      <form id="checkoutForm" data-checkout-form>
+        <div class="checkout-form-group">
+          <label class="checkout-label">
+            <span>Ваше имя *</span>
+            <input type="text" class="checkout-input" name="name" placeholder="Иван Иванов" required>
+          </label>
+          <label class="checkout-label">
+            <span>Номер телефона *</span>
+            <input type="tel" class="checkout-input" name="phone" placeholder="+7 (999) 000-00-00" required>
+          </label>
+          <label class="checkout-label">
+            <span>Электронная почта</span>
+            <input type="email" class="checkout-input" name="email" placeholder="example@mail.ru">
+          </label>
+          <label class="checkout-label">
+            <span>Город и адрес доставки</span>
+            <input type="text" class="checkout-input" name="address" placeholder="г. Челябинск, ул. Ленина, д. 1">
+          </label>
+        </div>
+        <button type="submit" class="cart-checkout-btn checkout-submit-btn">Перейти к оплате (ЮKassa)</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-notice" id="toastNotice"></div>
+
+  <!-- SITE FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>© 2026 MODUL.HAUS. Завод модульных домов и бань. Все права защищены.</div>
+      <div>
+        <a href="/admin.html" style="opacity: 0.7; color: #fff;">Вход для администратора</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/cart.js"></script>
+  <script src="/js/configurator.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize Configurator for Saunas (default Klassika)
+      Configurator.init('[data-hc-root]', 'klassika');
+
+      // Series Switcher Tabs
+      const seriesTabs = document.querySelectorAll('.hc-series-tab');
+      seriesTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          seriesTabs.forEach(t => t.classList.remove('is-active'));
+          tab.classList.add('is-active');
+          const slug = tab.dataset.seriesSlug;
+          const name = tab.textContent.replace('Серия', '').replace(/[«»]/g, '').trim();
+          Configurator.loadSeries(slug, name);
+        });
+      });
+
+      // Lead form handler
+      document.getElementById('saunasLeadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const form = this;
+        const btn = form.querySelector('button[type="submit"]');
+        const feedback = document.getElementById('saunasLeadFeedback');
+        const name = form.name.value;
+        const phone = form.phone.value;
+
+        btn.disabled = true;
+        btn.textContent = 'Отправка...';
+
+        try {
+          const res = await fetch('/api/orders/lead', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, comment: 'Заявка со страницы Модульные бани' })
+          });
+          if (res.ok) {
+            form.reset();
+            feedback.style.display = 'block';
+            btn.style.display = 'none';
+          } else {
+            const data = await res.json();
+            alert(data.error || 'Ошибка при отправке');
+            btn.disabled = false;
+            btn.textContent = 'Отправить';
+          }
+        } catch (err) {
+          alert('Ошибка связи с сервером');
+          btn.disabled = false;
+          btn.textContent = 'Отправить';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

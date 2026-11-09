@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Заказ успешно оплачен | DokaBani</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .success-container {
+      max-width: 640px;
+      margin: 80px auto;
+      background: #fff;
+      border-radius: var(--radius-lg);
+      padding: 48px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      background: #e6f7ec;
+      color: #28a745;
+      border-radius: 50%;
+      display: inline-grid;
+      place-items: center;
+      font-size: 36px;
+      margin-bottom: 24px;
+    }
+    .order-summary-box {
+      background: var(--surface-soft);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      text-align: left;
+      margin: 28px 0;
+      font-size: 14px;
+    }
+    .order-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .status-badge-paid {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #d4edda;
+      color: #155724;
+      font-weight: 800;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="success-container">
+      <div class="success-icon">✓</div>
+      <h1 style="font-size: 28px; font-weight: 900; margin-bottom: 8px;">Заказ успешно оформлен и оплачен!</h1>
+      <p style="color: var(--text-muted);">Спасибо за выбор нашей компании. Менеджер свяжется с вами для уточнения деталей доставки и фундамента.</p>
+
+      <div class="order-summary-box" id="order-box">
+        <div style="text-align: center; color: var(--text-muted);">Загружаем информацию о заказе...</div>
+      </div>
+
+      <div style="display: flex; gap: 14px; justify-content: center;">
+        <a href="/" class="btn btn-primary">Вернуться на главную</a>
+        <a href="/admin.html" class="btn btn-secondary">Посмотреть в админке</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const orderId = params.get('orderId');
+      const box = document.getElementById('order-box');
+
+      if (!orderId) {
+        box.innerHTML = '<div style="color: #dc3545;">Номер заказа не указан в ссылке.</div>';
+        return;
+      }
+
+      try {
+        // Verify payment status
+        await fetch(`/api/orders/${orderId}/check-payment`);
+        const res = await fetch(`/api/orders/${orderId}`);
+        if (!res.ok) throw new Error('Заказ не найден');
+        const order = await res.json();
+
+        const itemsHtml = (order.items || []).map(i => `
+          <div style="padding: 6px 0; border-bottom: 1px dashed var(--line); display: flex; justify-content: space-between;">
+            <div>
+              <strong>${i.title}</strong>
+              <div style="font-size: 12px; color: var(--text-muted);">${Object.entries(i.details || {}).map(([k,v]) => k + ': ' + v).join(', ')}</div>
+            </div>
+            <div>${new Intl.NumberFormat('ru-RU').format(i.price)} ₽</div>
+          </div>
+        `).join('');
+
+        box.innerHTML = `
+          <div class="order-row">
+            <span style="color: var(--text-muted);">Номер заказа:</span>
+            <strong>${order.order_number}</strong>
+          </div>
+          <div class="order-row">
+            <span style="color: var(--text-muted);">Статус оплаты:</span>
+            <span class="status-badge-paid">${order.payment_status === 'PAID' ? 'ОПЛАЧЕНО' : order.payment_status}</span>
+          </div>
+          <div class="order-row">
+            <span style="color: var(--text-muted);">Клиент:</span>
+            <strong>${order.customer_name} (${order.customer_phone})</strong>
+          </div>
+          <div class="order-row">
+            <span style="color: var(--text-muted);">Адрес:</span>
+            <span>${order.customer_address || 'Самовывоз / Не указан'}</span>
+          </div>
+          <div style="margin-top: 14px; margin-bottom: 8px; font-weight: 700;">Состав заказа:</div>
+          <div>${itemsHtml}</div>
+          <div class="order-row" style="margin-top: 14px; font-size: 18px;">
+            <span>Итого оплачено:</span>
+            <strong style="color: var(--accent);">${new Intl.NumberFormat('ru-RU').format(order.total_price)} ₽</strong>
+          </div>
+        `;
+      } catch (err) {
+        box.innerHTML = `<div style="color: #dc3545;">Ошибка загрузки заказа: ${err.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>

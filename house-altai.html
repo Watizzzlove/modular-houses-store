@@ -1,0 +1,1495 @@
+<style>
+.hc-root {
+  --hc-accent: #f5a20a;
+  --hc-accent-hover: #e89400;
+  --hc-accent-soft: #fff3d2;
+  --hc-text: #1c1d1f;
+  --hc-muted: #6f7278;
+  --hc-line: #e6e4df;
+  --hc-surface: #ffffff;
+  --hc-surface-soft: #f6f5f2;
+  --hc-radius-large: 24px;
+  --hc-radius-medium: 14px;
+  --hc-shadow: 0 18px 48px rgba(28, 29, 31, 0.07);
+  width: 100%;
+  color: var(--hc-text);
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.hc-root,
+.hc-root * {
+  box-sizing: border-box;
+}
+
+.hc-root button,
+.hc-root select,
+.hc-root a {
+  font-family: Arial, sans-serif;
+}
+
+.hc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(390px, 0.8fr);
+  gap: clamp(24px, 3vw, 44px);
+  width: min(1240px, 100%);
+  margin: 0 auto;
+  padding: 18px;
+  align-items: start;
+}
+
+.hc-viewer,
+.hc-panel {
+  min-width: 0;
+}
+
+.hc-stage {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--hc-radius-large);
+  background: var(--hc-surface-soft);
+  outline: none;
+  box-shadow: var(--hc-shadow);
+  touch-action: pan-y;
+}
+
+.hc-stage:focus-visible {
+  box-shadow: 0 0 0 3px rgba(245, 162, 10, 0.32), var(--hc-shadow);
+}
+
+.hc-stage-content,
+.hc-stage-image,
+.hc-placeholder {
+  width: 100%;
+  height: 100%;
+}
+
+.hc-stage-content {
+  position: relative;
+}
+
+.hc-stage-image {
+  display: block;
+  object-fit: cover;
+  background: var(--hc-surface-soft);
+}
+
+.hc-stage-image.is-plan {
+  object-fit: contain;
+  padding: clamp(12px, 2vw, 28px);
+  background: #ffffff;
+}
+
+.hc-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(26px, 6vw, 64px);
+  text-align: center;
+  background:
+    radial-gradient(circle at 22% 18%, rgba(245, 162, 10, 0.24), transparent 32%),
+    linear-gradient(145deg, #f5f4f0 0%, #e9e6df 100%);
+}
+
+.hc-placeholder-card {
+  max-width: 520px;
+}
+
+.hc-placeholder-icon {
+  display: inline-grid;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 18px;
+  place-items: center;
+  border-radius: 50%;
+  color: #7a5a18;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 28px;
+}
+
+.hc-placeholder-title {
+  margin: 0 0 8px;
+  font-size: clamp(22px, 3vw, 34px);
+  line-height: 1.12;
+}
+
+.hc-placeholder-text {
+  margin: 0;
+  color: var(--hc-muted);
+  font-size: clamp(14px, 1.4vw, 17px);
+}
+
+.hc-gallery-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--hc-muted);
+  background: rgba(246, 245, 242, 0.92);
+}
+
+.hc-stage.is-loading .hc-gallery-loading {
+  display: flex;
+}
+
+.hc-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(245, 162, 10, 0.22);
+  border-top-color: var(--hc-accent);
+  border-radius: 50%;
+  animation: hc-spin 0.8s linear infinite;
+}
+
+@keyframes hc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.hc-gallery-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(20, 20, 20, 0.16);
+  backdrop-filter: blur(12px) saturate(135%);
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+  font-size: 34px;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.hc-gallery-arrow:hover {
+  border-color: #ffffff;
+  color: #111111;
+  background: #ffffff;
+  text-shadow: none;
+}
+
+.hc-gallery-arrow:active {
+  transform: translateY(-50%) scale(0.96);
+}
+
+.hc-gallery-arrow:focus-visible,
+.hc-thumb:focus-visible,
+.hc-choice:focus-visible,
+.hc-button:focus-visible,
+.hc-select:focus-visible {
+  outline: 3px solid rgba(245, 162, 10, 0.38);
+  outline-offset: 2px;
+}
+
+.hc-gallery-arrow[hidden] {
+  display: none;
+}
+
+.hc-gallery-arrow--prev { left: 14px; }
+.hc-gallery-arrow--next { right: 14px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .hc-gallery-arrow {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .hc-stage:hover .hc-gallery-arrow,
+  .hc-stage:focus-within .hc-gallery-arrow {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.hc-gallery-counter {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 3;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(20, 20, 20, 0.58);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hc-thumbnails {
+  display: flex;
+  gap: 9px;
+  min-height: 72px;
+  padding: 10px 2px 3px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+
+.hc-thumbnails[hidden] {
+  display: none;
+}
+
+.hc-thumbnails::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.hc-thumb {
+  position: relative;
+  flex: 0 0 82px;
+  width: 82px;
+  height: 62px;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--hc-surface-soft);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.hc-thumb:hover,
+.hc-thumb.is-active {
+  opacity: 1;
+}
+
+.hc-thumb.is-active {
+  border-color: var(--hc-accent);
+}
+
+.hc-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hc-thumb img.is-plan {
+  object-fit: contain;
+  background: #ffffff;
+}
+
+.hc-thumb-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: #7a5a18;
+  background: var(--hc-accent-soft);
+  font-size: 20px;
+}
+
+.hc-project-meta {
+  padding: 20px 2px 4px;
+}
+
+.hc-eyebrow,
+.hc-summary-label {
+  margin: 0 0 5px;
+  color: var(--hc-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hc-project-title {
+  margin: 0;
+  font-size: clamp(27px, 3vw, 42px);
+  line-height: 1.06;
+  letter-spacing: -0.025em;
+}
+
+.hc-panel {
+  padding: clamp(22px, 3vw, 34px);
+  border: 1px solid var(--hc-line);
+  border-radius: var(--hc-radius-large);
+  background: var(--hc-surface);
+  box-shadow: var(--hc-shadow);
+}
+
+.hc-filter-section {
+  margin: 0 0 20px;
+}
+
+.hc-step-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin-bottom: 10px;
+}
+
+.hc-step-number {
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  color: #6e4b00;
+  background: var(--hc-accent-soft);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.hc-step-heading h3 {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.15;
+}
+
+.hc-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: 10px;
+}
+
+.hc-choice-grid--colors {
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+}
+
+.hc-choice {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border: 1px solid #deddd9;
+  border-radius: 12px;
+  color: var(--hc-text);
+  background: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.hc-choice:not(:disabled):hover {
+  border-color: #c6c3bd;
+  background: #faf9f7;
+}
+
+.hc-choice.is-selected {
+  border-width: 3px;
+  border-color: var(--hc-accent);
+  color: var(--hc-text);
+  background: #ffffff;
+}
+
+.hc-choice.is-selected:hover {
+  border-color: var(--hc-accent);
+  background: #ffffff;
+}
+
+.hc-choice:disabled {
+  border-width: 1px;
+  border-color: #d9d9d7;
+  color: #969793;
+  background: #ededeb;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.hc-choice:disabled .hc-color-dot {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.hc-color-dot {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+}
+
+.hc-select-wrap {
+  position: relative;
+}
+
+.hc-select-wrap::after {
+  position: absolute;
+  top: 50%;
+  right: 17px;
+  color: var(--hc-muted);
+  content: "\2304";
+  pointer-events: none;
+  transform: translateY(-56%);
+}
+
+.hc-select {
+  width: 100%;
+  min-height: 50px;
+  padding: 10px 46px 10px 15px;
+  border: 1px solid #d9d7d2;
+  border-radius: 12px;
+  color: var(--hc-text);
+  background: #ffffff;
+  font-size: 15px;
+  font-weight: 650;
+  appearance: none;
+  cursor: pointer;
+}
+
+.hc-summary {
+  padding-top: 1px;
+}
+
+.hc-summary-price {
+  margin-bottom: 20px;
+  font-size: clamp(30px, 3vw, 42px);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.hc-summary-list {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+}
+
+.hc-summary-list > div {
+  display: grid;
+  grid-template-columns: minmax(128px, 0.9fr) minmax(0, 1.1fr);
+  gap: 15px;
+}
+
+.hc-summary-list dt {
+  color: var(--hc-muted);
+}
+
+.hc-summary-list dd {
+  margin: 0;
+  font-weight: 750;
+}
+
+.hc-summary-note {
+  margin: 26px 0 0;
+  color: var(--hc-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.hc-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.hc-button {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.hc-button:active {
+  transform: translateY(1px);
+}
+
+.hc-button--primary {
+  border: 1px solid var(--hc-accent);
+  color: #1f1600;
+  background: var(--hc-accent);
+}
+
+.hc-button--primary:hover {
+  border-color: var(--hc-accent-hover);
+  background: var(--hc-accent-hover);
+}
+
+.hc-fatal {
+  width: min(760px, calc(100% - 36px));
+  margin: 20px auto;
+  padding: 24px;
+  border: 1px solid #efb5b5;
+  border-radius: 14px;
+  color: #6d2424;
+  background: #fff1f1;
+}
+
+@media (max-width: 960px) {
+  .hc-layout {
+    grid-template-columns: minmax(0, 1fr);
+    width: min(760px, 100%);
+  }
+
+  .hc-gallery-arrow {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .hc-panel {
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 600px) {
+  .hc-layout {
+    gap: 20px;
+    padding: 10px;
+  }
+
+  .hc-stage,
+  .hc-panel {
+    border-radius: 18px;
+  }
+
+  .hc-panel {
+    padding: 21px 17px;
+  }
+
+  .hc-project-meta {
+    padding: 16px 2px 2px;
+  }
+
+  .hc-choice-grid,
+  .hc-choice-grid--colors {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hc-choice {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .hc-summary-list > div {
+    grid-template-columns: 118px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .hc-gallery-arrow {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-root *,
+  .hc-root *::before,
+  .hc-root *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.hc-root .hc-choice-grid {
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+}
+
+.hc-root .hc-choice {
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .hc-root .hc-choice-grid,
+  .hc-root .hc-choice-grid--colors {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .hc-root .hc-choice {
+    min-height: 42px;
+    justify-content: center;
+    padding: 7px 8px;
+    text-align: center;
+  }
+}
+</style>
+<div class="hc-root" data-hc-root>
+  <div class="hc-layout">
+    <section class="hc-viewer" aria-label="Выбранный проект">
+      <div class="hc-stage" data-stage tabindex="0" aria-label="Галерея проекта" aria-live="polite">
+        <div class="hc-stage-content" data-stage-content></div>
+        <div class="hc-gallery-loading" data-gallery-loading aria-hidden="true">
+          <span class="hc-spinner"></span>
+          <span>Загружаем фотографии</span>
+        </div>
+        <button class="hc-gallery-arrow hc-gallery-arrow--prev" type="button" data-action="previous-slide" aria-label="Предыдущее изображение">&#8249;</button>
+        <button class="hc-gallery-arrow hc-gallery-arrow--next" type="button" data-action="next-slide" aria-label="Следующее изображение">&#8250;</button>
+        <div class="hc-gallery-counter" data-gallery-counter></div>
+      </div>
+      <div class="hc-thumbnails" data-thumbnails aria-label="Миниатюры галереи"></div>
+      <div class="hc-project-meta">
+        <div class="hc-project-copy">
+          <p class="hc-eyebrow">Выбранный проект</p>
+          <h2 class="hc-project-title" data-project-title></h2>
+        </div>
+      </div>
+    </section>
+
+    <aside class="hc-panel" aria-label="Настройки проекта">
+      <section class="hc-filter-section">
+        <div class="hc-step-heading">
+          <span class="hc-step-number">1</span>
+          <h3>Размер проекта</h3>
+        </div>
+        <div class="hc-select-wrap">
+          <select class="hc-select" id="hc-size-select" data-size-select aria-label="Размер проекта"></select>
+        </div>
+      </section>
+
+      <section class="hc-filter-section" data-color-section>
+        <div class="hc-step-heading">
+          <span class="hc-step-number">2</span>
+          <h3>Цвет фасада</h3>
+        </div>
+        <div class="hc-choice-grid hc-choice-grid--colors" data-color-options></div>
+      </section>
+
+      <section class="hc-filter-section" data-entrance-section>
+        <div class="hc-step-heading">
+          <span class="hc-step-number">3</span>
+          <h3>Входная группа</h3>
+        </div>
+        <div class="hc-choice-grid" data-entrance-options></div>
+      </section>
+
+      <section class="hc-filter-section" data-terrace-type-section hidden>
+        <div class="hc-step-heading">
+          <span class="hc-step-number">4</span>
+          <h3>Исполнение террасы</h3>
+        </div>
+        <div class="hc-choice-grid" data-terrace-type-options></div>
+      </section>
+
+      <section class="hc-filter-section" data-extension-size-section hidden>
+        <div class="hc-step-heading">
+          <span class="hc-step-number" data-extension-step-number>4</span>
+          <h3 data-extension-size-title>Размер входной группы</h3>
+        </div>
+        <div class="hc-choice-grid" data-extension-size-options></div>
+      </section>
+
+      <section class="hc-summary" aria-label="Итоговый состав">
+        <p class="hc-summary-label">Стоимость проекта</p>
+        <div class="hc-summary-price" data-summary-price></div>
+        <dl class="hc-summary-list">
+          <div><dt>Тип</dt><dd data-summary-type></dd></div>
+          <div><dt>Серия</dt><dd data-summary-series></dd></div>
+          <div><dt>Размер</dt><dd data-summary-size></dd></div>
+          <div><dt>Входная группа</dt><dd data-summary-entrance></dd></div>
+          <div><dt>Фасад</dt><dd data-summary-color></dd></div>
+        </dl>
+        <p class="hc-summary-note">Цена взята из выбранной конфигурации. Доставка и подготовка участка рассчитываются отдельно.</p>
+        <div class="hc-actions">
+          <a class="hc-button hc-button--primary" data-cta href="#popup:calculation">Получить расчёт</a>
+        </div>
+      </section>
+    </aside>
+  </div>
+  <div class="hc-fatal" data-fatal hidden></div>
+</div>
+<script type="application/json" data-hc-config>{"schemaVersion":1,"typeName":"Дом","seriesName":"Алтай","ctaHref":"#popup:calculation","media":{"provider":"yandexDisk","publicKey":"https://disk.yandex.ru/d/MqtAzEt_70F65A","seriesPath":"houses/altai"}}</script>
+<script>
+(function () {
+  "use strict";
+
+  var runtimeScript = document.currentScript;
+  var configNode = runtimeScript && runtimeScript.previousElementSibling;
+  var root = configNode && configNode.previousElementSibling;
+  if (!root || !root.matches || !root.matches("[data-hc-root]")) return;
+
+  var config;
+  try {
+    config = JSON.parse(configNode.textContent || "{}");
+  } catch (error) {
+    showFatal("Не удалось прочитать конфигурацию конструктора.");
+    return;
+  }
+
+  var COLOR_ORDER = ["beige", "bronze", "graphite"];
+  var COLOR_LABELS = { beige: "Бежевый", bronze: "Бронза", graphite: "Графит" };
+  var COLOR_VALUES = { beige: "#c7b994", bronze: "#76523b", graphite: "#343a3b" };
+  var ENTRANCE_LABELS = { porch: "Крыльцо", terrace: "Терраса" };
+  var TERRACE_LABELS = { covered: "Крытая", open: "Открытая" };
+  var TERRACE_SUMMARY_LABELS = { covered: "Крытая терраса", open: "Открытая терраса" };
+  var KIND_LABELS = {
+    exterior: "вид снаружи",
+    plan: "планировка",
+    interior: "интерьер",
+    real: "реальная фотография",
+    detail: "деталь проекта",
+    image: "фотография проекта"
+  };
+  var ALLOWED_IMAGE = /\.(?:jpe?g|png|webp)$/i;
+  var PRICED_DIMENSION_PATTERN = /^(?:(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)(?:m2|sqm))(?:__p(\d+))?$/i;
+  var diagnostics = new Set();
+
+  var state = {
+    houseKey: "",
+    color: "beige",
+    entrance: null,
+    terraceType: null,
+    extensionKey: null,
+    houseChoices: [],
+    extensionChoices: [],
+    availableColors: [],
+    availableEntrances: [],
+    availableTerraceTypes: [],
+    currentHouse: null,
+    currentExtension: null,
+    slides: [],
+    slideIndex: 0,
+    request: 0,
+    controller: null,
+    loading: true
+  };
+
+  var elements = {
+    layout: query(".hc-layout"),
+    fatal: query("[data-fatal]"),
+    stage: query("[data-stage]"),
+    stageContent: query("[data-stage-content]"),
+    galleryCounter: query("[data-gallery-counter]"),
+    thumbnails: query("[data-thumbnails]"),
+    previous: query('[data-action="previous-slide"]'),
+    next: query('[data-action="next-slide"]'),
+    sizeSelect: query("[data-size-select]"),
+    colorSection: query("[data-color-section]"),
+    colorOptions: query("[data-color-options]"),
+    entranceSection: query("[data-entrance-section]"),
+    entranceOptions: query("[data-entrance-options]"),
+    terraceTypeSection: query("[data-terrace-type-section]"),
+    terraceTypeOptions: query("[data-terrace-type-options]"),
+    extensionSizeSection: query("[data-extension-size-section]"),
+    extensionStepNumber: query("[data-extension-step-number]"),
+    extensionSizeTitle: query("[data-extension-size-title]"),
+    extensionSizeOptions: query("[data-extension-size-options]"),
+    projectTitle: query("[data-project-title]"),
+    summaryPrice: query("[data-summary-price]"),
+    summaryType: query("[data-summary-type]"),
+    summarySeries: query("[data-summary-series]"),
+    summarySize: query("[data-summary-size]"),
+    summaryEntrance: query("[data-summary-entrance]"),
+    summaryColor: query("[data-summary-color]"),
+    cta: query("[data-cta]")
+  };
+
+  var providerName = config.media && config.media.provider ? config.media.provider : "placeholder";
+  var mediaProvider = providerName === "yandexDisk"
+    ? createYandexDiskProvider(config.media || {})
+    : createUnavailableProvider();
+
+  bindEvents();
+  root.setAttribute("data-hc-ready", "");
+  refreshMedia();
+
+  function query(selector) {
+    return root.querySelector(selector);
+  }
+
+  function showFatal(message) {
+    var layout = root.querySelector(".hc-layout");
+    var fatal = root.querySelector("[data-fatal]");
+    if (layout) layout.hidden = true;
+    if (fatal) {
+      fatal.hidden = false;
+      fatal.textContent = message;
+    }
+  }
+
+  function parsePricedDimensionFolder(name) {
+    var match = String(name || "").match(PRICED_DIMENSION_PATTERN);
+    if (!match) return null;
+    var price = match[4] == null ? null : Number(match[4]);
+    if (price != null && !Number.isFinite(price)) return null;
+
+    if (match[1] != null && match[2] != null) {
+      var width = Number(match[1]);
+      var length = Number(match[2]);
+      if (!Number.isFinite(width) || !Number.isFinite(length) || width <= 0 || length <= 0) return null;
+      return {
+        isArea: false,
+        key: canonicalNumber(width) + "x" + canonicalNumber(length),
+        label: displayNumber(width) + "\u00d7" + displayNumber(length),
+        width: width,
+        length: length,
+        area: width * length,
+        price: price,
+        folder: String(name)
+      };
+    }
+
+    if (match[3] != null) {
+      var area = Number(match[3]);
+      if (!Number.isFinite(area) || area <= 0) return null;
+      return {
+        isArea: true,
+        key: canonicalNumber(area) + "m2",
+        label: displayNumber(area) + " \u043a\u0432.\u043c",
+        width: 0,
+        length: 0,
+        area: area,
+        price: price,
+        folder: String(name)
+      };
+    }
+
+    return null;
+  }
+
+  function canonicalNumber(value) { return Number(value).toString(); }
+  function displayNumber(value) { return canonicalNumber(value).replace(".", ","); }
+  function compareDimensions(left, right) {
+    if (left.isArea && right.isArea) {
+      return left.area - right.area || left.key.localeCompare(right.key, "en");
+    }
+    return left.width - right.width || left.length - right.length || (left.area || 0) - (right.area || 0) || left.key.localeCompare(right.key, "en");
+  }
+
+  function buildHouseChoices(diskItems) {
+    var choices = new Map();
+    directoryItems(diskItems).forEach(function (item) {
+      var parsed = parsePricedDimensionFolder(item.name);
+      if (!parsed) {
+        warn("Игнорируется некорректная папка: " + item.name);
+        return;
+      }
+      if (!choices.has(parsed.key)) {
+        choices.set(parsed.key, {
+          key: parsed.key,
+          label: parsed.label,
+          width: parsed.width,
+          length: parsed.length,
+          area: parsed.area,
+          isArea: parsed.isArea,
+          folder: parsed.folder,
+          price: parsed.price
+        });
+      } else {
+        var existing = choices.get(parsed.key);
+        if (existing.price !== parsed.price) {
+          warn("Дублирующий размер " + parsed.label + " с разными ценами: " + existing.folder + ", " + parsed.folder + ". Используется первая.");
+        }
+      }
+    });
+    return Array.from(choices.values()).sort(compareDimensions);
+  }
+
+  function buildExtensionChoices(diskItems) {
+    var choices = new Map();
+    directoryItems(diskItems).forEach(function (item) {
+      var parsed = parsePricedDimensionFolder(item.name);
+      if (!parsed) {
+        warn("Игнорируется некорректная папка размера входной группы: " + item.name);
+        return;
+      }
+      if (!choices.has(parsed.key)) {
+        choices.set(parsed.key, {
+          key: parsed.key,
+          label: parsed.label,
+          width: parsed.width,
+          length: parsed.length,
+          area: parsed.area,
+          isArea: parsed.isArea,
+          folder: parsed.folder,
+          price: parsed.price
+        });
+      } else {
+        var existing = choices.get(parsed.key);
+        if (existing.price !== parsed.price) {
+          warn("Дублирующий размер входной группы " + parsed.label + " с разными ценами: " + existing.folder + ", " + parsed.folder + ". Используется первая.");
+        }
+      }
+    });
+    return Array.from(choices.values()).sort(compareDimensions);
+  }
+
+  function currentHouse() {
+    return state.houseChoices.find(function (c) { return c.key === state.houseKey; }) || state.houseChoices[0] || null;
+  }
+
+  function currentExtension() {
+    return state.extensionChoices.find(function (c) { return c.key === state.extensionKey; }) || null;
+  }
+
+  function isHouseAvailable(choice) {
+    return !!(choice && choice.folder);
+  }
+
+  function isExtensionAvailable(choice) {
+    return !!(choice && choice.folder);
+  }
+
+  function isCompleteEntrance() {
+    return state.entrance === "porch" && !!state.currentExtension ||
+      state.entrance === "terrace" && !!state.terraceType && !!state.currentExtension;
+  }
+
+  function priceLabel(price) {
+    if (price == null || !Number.isFinite(Number(price))) return "\u0426\u0435\u043d\u0430 \u043d\u0430 \u0443\u0442\u043e\u0447\u043d\u0435\u043d\u0438\u0438";
+    return formatPrice(price);
+  }
+
+  async function refreshMedia() {
+    state.request += 1;
+    var requestId = state.request;
+    if (state.controller) state.controller.abort();
+    state.controller = new AbortController();
+    state.loading = true;
+    setLoading(true);
+
+    try {
+      var signal = state.controller.signal;
+      var seriesPath = mediaPath(config.media && config.media.seriesPath);
+      var rootItems = await mediaProvider.list(seriesPath, signal);
+      if (stale(requestId, signal)) return;
+
+      state.houseChoices = buildHouseChoices(rootItems);
+      if (!state.houseChoices.length) {
+        showFatal("На диске нет доступных размеров этой серии.");
+        return;
+      }
+      if (!state.houseChoices.some(function (c) { return c.key === state.houseKey && isHouseAvailable(c); })) {
+        var firstAvailable = state.houseChoices.find(isHouseAvailable);
+        state.houseKey = firstAvailable ? firstAvailable.key : state.houseChoices[0].key;
+        clearEntrance();
+      }
+      state.currentHouse = currentHouse();
+
+      var houseItems = [];
+      var housePath = null;
+      if (state.currentHouse && state.currentHouse.folder) {
+        housePath = mediaPath(seriesPath, state.currentHouse.folder);
+        houseItems = await mediaProvider.list(housePath, signal);
+        if (stale(requestId, signal)) return;
+      }
+
+      state.availableEntrances = [];
+      if (hasDirectory(houseItems, "porch")) state.availableEntrances.push("porch");
+      if (hasDirectory(houseItems, "terrace")) state.availableEntrances.push("terrace");
+      if (state.entrance && state.availableEntrances.indexOf(state.entrance) === -1) clearEntrance();
+
+      state.availableTerraceTypes = [];
+      state.extensionChoices = [];
+      state.currentExtension = null;
+
+      if (state.entrance === "porch" && housePath) {
+        var porchPath = mediaPath(housePath, "porch");
+        var porchItems = await mediaProvider.list(porchPath, signal);
+        if (stale(requestId, signal)) return;
+        state.extensionChoices = buildExtensionChoices(porchItems).filter(isExtensionAvailable);
+      }
+
+      if (state.entrance === "terrace" && housePath) {
+        var terracePath = mediaPath(housePath, "terrace");
+        var terraceItems = await mediaProvider.list(terracePath, signal);
+        if (stale(requestId, signal)) return;
+        ["covered", "open"].forEach(function (type) {
+          if (hasDirectory(terraceItems, type)) state.availableTerraceTypes.push(type);
+        });
+        if (state.terraceType && state.availableTerraceTypes.indexOf(state.terraceType) === -1) {
+          state.terraceType = null;
+          state.extensionKey = null;
+        }
+        if (state.terraceType) {
+          var typePath = mediaPath(terracePath, state.terraceType);
+          var typeItems = await mediaProvider.list(typePath, signal);
+          if (stale(requestId, signal)) return;
+          state.extensionChoices = buildExtensionChoices(typeItems).filter(isExtensionAvailable);
+        }
+      }
+
+      if (!state.extensionChoices.some(function (c) { return c.key === state.extensionKey && isExtensionAvailable(c); })) {
+        state.extensionKey = null;
+      }
+      state.currentExtension = currentExtension();
+
+      var target = resolveTarget(seriesPath);
+      var targetItems = target.items;
+      if (target.path && target.needsListing) {
+        targetItems = await mediaProvider.list(target.path, signal);
+        if (stale(requestId, signal)) return;
+      }
+
+      state.availableColors = target.exists ? COLOR_ORDER.filter(function (color) {
+        return hasDirectory(targetItems, color);
+      }) : [];
+      if (state.availableColors.length && state.availableColors.indexOf(state.color) === -1) {
+        state.color = state.availableColors[0];
+      } else if (!state.availableColors.length) {
+        state.color = null;
+      }
+
+      var slides = [];
+      if (target.exists && state.availableColors.indexOf(state.color) !== -1) {
+        var colorItems = await mediaProvider.list(mediaPath(target.path, state.color), signal);
+        if (stale(requestId, signal)) return;
+        slides = colorItems.filter(function (item) {
+          return item && item.type === "file" && ALLOWED_IMAGE.test(item.name || "") && (item.preview || item.file);
+        }).map(mediaItemToSlide).sort(compareSlides);
+      }
+
+      state.slides = slides.length ? slides : [makePlaceholderSlide("missing")];
+      state.slideIndex = 0;
+      state.loading = false;
+      renderAll();
+      renderGallery();
+    } catch (error) {
+      if (error && error.name === "AbortError") return;
+      if (requestId !== state.request) return;
+      warn("\u041e\u0448\u0438\u0431\u043a\u0430 \u043c\u0435\u0434\u0438\u0430\u0445\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0430: " + (error && error.message ? error.message : error));
+      state.currentHouse = currentHouse();
+      state.availableEntrances = [];
+      state.availableTerraceTypes = [];
+      state.availableColors = [];
+      state.extensionChoices = [];
+      state.currentExtension = null;
+      clearEntrance();
+      state.loading = false;
+      state.slides = [makePlaceholderSlide("error")];
+      state.slideIndex = 0;
+      renderAll();
+      renderGallery();
+    } finally {
+      if (requestId === state.request) setLoading(false);
+    }
+  }
+
+  function resolveTarget(seriesPath) {
+    var house = state.currentHouse;
+    if (!house || !house.folder) return { exists: false, path: null, items: [], needsListing: false };
+    var housePath = mediaPath(seriesPath, house.folder);
+    if (!isCompleteEntrance()) {
+      return { exists: true, path: housePath, items: null, needsListing: true };
+    }
+    var extension = state.currentExtension;
+    if (!extension || !extension.folder) return { exists: false, path: null, items: [], needsListing: false };
+    if (state.entrance === "porch") {
+      return { exists: true, path: mediaPath(housePath, "porch", extension.folder), items: null, needsListing: true };
+    }
+    return { exists: true, path: mediaPath(housePath, "terrace", state.terraceType, extension.folder), items: null, needsListing: true };
+  }
+
+  function renderAll() {
+    state.currentHouse = currentHouse();
+    state.currentExtension = currentExtension();
+    renderControls();
+    renderDetails();
+    if (!state.slides.length) {
+      state.slides = [makePlaceholderSlide(state.loading ? "loading" : "missing")];
+      state.slideIndex = 0;
+      renderGallery();
+    }
+  }
+
+  function renderControls() {
+    elements.sizeSelect.innerHTML = state.houseChoices.map(function (choice) {
+      var disabled = !isHouseAvailable(choice);
+      var priceText = priceLabel(choice.price);
+      return '<option value="' + escapeHtml(choice.key) + '"' + (choice.key === state.houseKey ? " selected" : "") + (disabled ? " disabled" : "") + ">" +
+        escapeHtml(choice.label + " | " + priceText) + "</option>";
+    }).join("");
+
+    elements.colorSection.hidden = !state.loading && !state.availableColors.length;
+    elements.colorOptions.innerHTML = COLOR_ORDER.filter(function (color) {
+      return state.availableColors.indexOf(color) !== -1;
+    }).map(function (color) {
+      var dot = '<span class="hc-color-dot" aria-hidden="true" style="background:' + COLOR_VALUES[color] + '"></span>';
+      return choiceButton("color", color, COLOR_LABELS[color], state.color === color, dot, false);
+    }).join("");
+
+    elements.entranceSection.hidden = !state.loading && !state.availableEntrances.length;
+    elements.entranceOptions.innerHTML = ["porch", "terrace"].filter(function (entrance) {
+      return state.availableEntrances.indexOf(entrance) !== -1;
+    }).map(function (entrance) {
+      return choiceButton("entrance", entrance, ENTRANCE_LABELS[entrance], state.entrance === entrance, "", false);
+    }).join("");
+
+    elements.terraceTypeSection.hidden = state.entrance !== "terrace" || !state.availableTerraceTypes.length;
+    elements.terraceTypeOptions.innerHTML = ["covered", "open"].filter(function (type) {
+      return state.availableTerraceTypes.indexOf(type) !== -1;
+    }).map(function (type) {
+      return choiceButton("terrace-type", type, TERRACE_LABELS[type], state.terraceType === type, "", false);
+    }).join("");
+
+    var showSizes = state.entrance === "porch" || state.entrance === "terrace" && !!state.terraceType;
+    elements.extensionSizeSection.hidden = !showSizes || !state.extensionChoices.length;
+    elements.extensionStepNumber.textContent = state.entrance === "terrace" ? "5" : "4";
+    elements.extensionSizeTitle.textContent = state.entrance === "porch"
+      ? "\u0420\u0430\u0437\u043c\u0435\u0440 \u043a\u0440\u044b\u043b\u044c\u0446\u0430"
+      : state.terraceType === "open" ? "\u0420\u0430\u0437\u043c\u0435\u0440 \u043e\u0442\u043a\u0440\u044b\u0442\u043e\u0439 \u0442\u0435\u0440\u0440\u0430\u0441\u044b" : "\u0420\u0430\u0437\u043c\u0435\u0440 \u043a\u0440\u044b\u0442\u043e\u0439 \u0442\u0435\u0440\u0440\u0430\u0441\u044b";
+    elements.extensionSizeOptions.innerHTML = state.extensionChoices.map(function (choice) {
+      var priceText = priceLabel(choice.price);
+      return choiceButton("extension-size", choice.key, choice.label + " | " + priceText, state.extensionKey === choice.key, "", false);
+    }).join("");
+
+    elements.cta.setAttribute("href", config.ctaHref);
+  }
+
+  function renderDetails() {
+    var house = state.currentHouse;
+    var complete = isCompleteEntrance();
+    var pricedChoice = complete ? state.currentExtension : house;
+    elements.projectTitle.textContent = projectTitle();
+    elements.summaryPrice.textContent = priceLabel(pricedChoice ? pricedChoice.price : null);
+    elements.summaryType.textContent = config.typeName;
+    elements.summarySeries.textContent = config.seriesName;
+    elements.summarySize.textContent = house ? house.label : "\u2014";
+    elements.summaryEntrance.textContent = entranceSummary();
+    elements.summaryColor.textContent = COLOR_LABELS[state.color] || "\u2014";
+  }
+
+  function projectTitle() {
+    var houseLabel = state.currentHouse ? state.currentHouse.label : "";
+    var base = config.seriesName + (houseLabel ? " " + houseLabel : "");
+    if (!isCompleteEntrance()) return base;
+    if (state.entrance === "porch") return base + " \u0441 \u043a\u0440\u044b\u043b\u044c\u0446\u043e\u043c " + state.currentExtension.label;
+    return base + " \u0441 " + (state.terraceType === "open" ? "\u043e\u0442\u043a\u0440\u044b\u0442\u043e\u0439" : "\u043a\u0440\u044b\u0442\u043e\u0439") + " \u0442\u0435\u0440\u0440\u0430\u0441\u043e\u0439 " + state.currentExtension.label;
+  }
+
+  function entranceSummary() {
+    if (!state.entrance) return "\u041d\u0435\u0442";
+    if (state.entrance === "porch") {
+      return state.currentExtension ? "\u041a\u0440\u044b\u043b\u044c\u0446\u043e " + state.currentExtension.label : "\u041a\u0440\u044b\u043b\u044c\u0446\u043e \u2014 \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0440\u0430\u0437\u043c\u0435\u0440";
+    }
+    if (!state.terraceType) return "\u0422\u0435\u0440\u0440\u0430\u0441\u0430 \u2014 \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0438\u0441\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435";
+    var label = TERRACE_SUMMARY_LABELS[state.terraceType];
+    return state.currentExtension ? label + " " + state.currentExtension.label : label + " \u2014 \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0440\u0430\u0437\u043c\u0435\u0440";
+  }
+
+  function formatPrice(price) {
+    return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(Number(price)) + " \u20bd";
+  }
+
+  function choiceButton(kind, value, label, selected, prefix, disabled) {
+    return '<button type="button" class="hc-choice' + (selected ? " is-selected" : "") + '" data-' + kind + '="' +
+      escapeHtml(value) + '" aria-pressed="' + (selected ? "true" : "false") + '"' +
+      (disabled ? ' disabled aria-disabled="true"' : "") + ">" + (prefix || "") + '<span>' + escapeHtml(label) + "</span></button>";
+  }
+
+  function makePlaceholderSlide(reason) {
+    var detail = reason === "error"
+      ? "\u0413\u0430\u043b\u0435\u0440\u0435\u044f \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430. \u0412\u044b\u0431\u043e\u0440 \u043f\u0440\u043e\u0435\u043a\u0442\u0430 \u0438 \u0440\u0430\u0441\u0447\u0451\u0442 \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u044e\u0442 \u0440\u0430\u0431\u043e\u0442\u0430\u0442\u044c."
+      : reason === "loading"
+        ? "\u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0435 \u0432\u0430\u0440\u0438\u0430\u043d\u0442\u044b \u0438 \u0444\u043e\u0442\u043e\u0433\u0440\u0430\u0444\u0438\u0438."
+        : "\u0414\u043b\u044f \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0439 \u043a\u043e\u043d\u0444\u0438\u0433\u0443\u0440\u0430\u0446\u0438\u0438 \u0444\u043e\u0442\u043e\u0433\u0440\u0430\u0444\u0438\u0438 \u043f\u043e\u043a\u0430 \u043d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u044b.";
+    return { type: "placeholder", name: "placeholder", order: 0, reason: reason, title: projectTitle(), text: detail };
+  }
+
+  function renderGallery() {
+    var slide = state.slides[state.slideIndex];
+    if (!slide) return;
+    renderStageSlide(slide);
+    renderThumbnails();
+    var images = state.slides.filter(function (item) { return item.type === "image"; });
+    var multiple = images.length > 1;
+    elements.previous.hidden = !multiple || state.slideIndex === 0;
+    elements.next.hidden = !multiple || state.slideIndex === state.slides.length - 1;
+    elements.galleryCounter.textContent = images.length ? (state.slideIndex + 1) + " / " + images.length : "";
+  }
+
+  function renderStageSlide(slide) {
+    elements.stageContent.innerHTML = "";
+    if (slide.type === "placeholder") {
+      var placeholder = document.createElement("div");
+      placeholder.className = "hc-placeholder";
+      placeholder.innerHTML = '<div class="hc-placeholder-card"><span class="hc-placeholder-icon" aria-hidden="true">&#8962;</span>' +
+        '<h3 class="hc-placeholder-title">' + escapeHtml(slide.title) + "</h3>" +
+        '<p class="hc-placeholder-text">' + escapeHtml(slide.text) + "</p></div>";
+      elements.stageContent.appendChild(placeholder);
+      return;
+    }
+    var image = document.createElement("img");
+    image.className = "hc-stage-image" + (slide.kind === "plan" ? " is-plan" : "");
+    image.src = slide.url;
+    image.referrerPolicy = slide.referrerPolicy || "no-referrer";
+    image.alt = projectTitle() + " \u2014 " + (KIND_LABELS[slide.kind] || KIND_LABELS.image);
+    image.decoding = "async";
+    image.addEventListener("error", function () {
+      var broken = makePlaceholderSlide("error");
+      broken.text = "\u042d\u0442\u043e \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e. \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0434\u0440\u0443\u0433\u043e\u0439 \u043a\u0430\u0434\u0440 \u0438\u043b\u0438 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u0435 \u043f\u043e\u0437\u0436\u0435.";
+      renderStageSlide(broken);
+    }, { once: true });
+    elements.stageContent.appendChild(image);
+  }
+
+  function renderThumbnails() {
+    elements.thumbnails.innerHTML = "";
+    var hasImages = state.slides.some(function (slide) { return slide.type === "image"; });
+    elements.thumbnails.hidden = !hasImages;
+    if (!hasImages) return;
+    state.slides.forEach(function (slide, index) {
+      if (slide.type !== "image") return;
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "hc-thumb" + (index === state.slideIndex ? " is-active" : "");
+      button.dataset.slideIndex = String(index);
+      button.setAttribute("aria-label", "\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435 " + (index + 1));
+      button.setAttribute("aria-current", index === state.slideIndex ? "true" : "false");
+      var image = document.createElement("img");
+      image.src = slide.thumbnailUrl || slide.url;
+      image.referrerPolicy = slide.referrerPolicy || "no-referrer";
+      image.alt = "";
+      image.loading = "lazy";
+      image.className = slide.kind === "plan" ? "is-plan" : "";
+      image.addEventListener("error", function () { image.style.display = "none"; }, { once: true });
+      button.appendChild(image);
+      elements.thumbnails.appendChild(button);
+    });
+  }
+
+  function showSlide(index) {
+    if (!state.slides.length) return;
+    state.slideIndex = Math.max(0, Math.min(index, state.slides.length - 1));
+    renderGallery();
+  }
+
+  function bindEvents() {
+    root.addEventListener("click", function (event) {
+      var entranceButton = event.target.closest("[data-entrance]");
+      if (entranceButton && root.contains(entranceButton)) {
+        if (entranceButton.disabled) return;
+        var nextEntrance = entranceButton.dataset.entrance;
+        if (state.entrance === nextEntrance) clearEntrance();
+        else {
+          state.entrance = nextEntrance;
+          state.terraceType = null;
+          state.extensionKey = null;
+        }
+        state.slides = [];
+        renderAll();
+        refreshMedia();
+        return;
+      }
+
+      var colorButton = event.target.closest("[data-color]");
+      if (colorButton && root.contains(colorButton)) {
+        if (colorButton.disabled) return;
+        state.color = colorButton.dataset.color;
+        state.slides = [];
+        renderAll();
+        refreshMedia();
+        return;
+      }
+
+      var typeButton = event.target.closest("[data-terrace-type]");
+      if (typeButton && root.contains(typeButton)) {
+        if (typeButton.disabled) return;
+        var type = typeButton.dataset.terraceType;
+        state.terraceType = state.terraceType === type ? null : type;
+        state.extensionKey = null;
+        state.slides = [];
+        renderAll();
+        refreshMedia();
+        return;
+      }
+
+      var sizeButton = event.target.closest("[data-extension-size]");
+      if (sizeButton && root.contains(sizeButton)) {
+        if (sizeButton.disabled) return;
+        state.extensionKey = sizeButton.dataset.extensionSize;
+        state.availableColors = [];
+        state.slides = [];
+        renderAll();
+        refreshMedia();
+        return;
+      }
+
+      var thumbnail = event.target.closest("[data-slide-index]");
+      if (thumbnail && root.contains(thumbnail)) {
+        showSlide(Number(thumbnail.dataset.slideIndex));
+        return;
+      }
+
+      var action = event.target.closest("[data-action]");
+      if (!action || !root.contains(action)) return;
+      if (action.dataset.action === "previous-slide") showSlide(state.slideIndex - 1);
+      if (action.dataset.action === "next-slide") showSlide(state.slideIndex + 1);
+    });
+
+    elements.sizeSelect.addEventListener("change", function () {
+      state.houseKey = elements.sizeSelect.value;
+      clearEntrance();
+      state.availableColors = [];
+      state.availableEntrances = [];
+      state.availableTerraceTypes = [];
+      state.slides = [];
+      renderAll();
+      refreshMedia();
+    });
+
+    elements.stage.addEventListener("keydown", function (event) {
+      if (event.key === "ArrowLeft") { event.preventDefault(); showSlide(state.slideIndex - 1); }
+      if (event.key === "ArrowRight") { event.preventDefault(); showSlide(state.slideIndex + 1); }
+    });
+
+    var pointerStart = null;
+    elements.stage.addEventListener("pointerdown", function (event) {
+      if (event.isPrimary) pointerStart = { x: event.clientX, y: event.clientY };
+    });
+    elements.stage.addEventListener("pointerup", function (event) {
+      if (!pointerStart || !event.isPrimary) return;
+      var deltaX = event.clientX - pointerStart.x;
+      var deltaY = event.clientY - pointerStart.y;
+      pointerStart = null;
+      if (Math.abs(deltaX) < 46 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+      showSlide(state.slideIndex + (deltaX < 0 ? 1 : -1));
+    });
+    elements.stage.addEventListener("pointercancel", function () { pointerStart = null; });
+  }
+
+  function clearEntrance() {
+    state.entrance = null;
+    state.terraceType = null;
+    state.extensionKey = null;
+    state.extensionChoices = [];
+    state.currentExtension = null;
+  }
+
+  function setLoading(value) {
+    elements.stage.classList.toggle("is-loading", value);
+    elements.stage.setAttribute("aria-busy", value ? "true" : "false");
+  }
+
+  function stale(requestId, signal) {
+    if (signal.aborted) throw abortError();
+    return requestId !== state.request;
+  }
+
+  function directoryItems(items) {
+    return Array.isArray(items) ? items.filter(function (item) { return item && item.type === "dir"; }) : [];
+  }
+
+  function hasDirectory(items, name) {
+    return directoryItems(items).some(function (item) {
+      return String(item.name || "").toLowerCase() === name;
+    });
+  }
+
+  function warn(message) {
+    if (diagnostics.has(message)) return;
+    diagnostics.add(message);
+    console.warn("[HC] " + message);
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function mediaPath() {
+    var parts = [];
+    for (var index = 0; index < arguments.length; index += 1) {
+      String(arguments[index] || "").split("/").forEach(function (part) {
+        var clean = part.trim();
+        if (clean) parts.push(clean);
+      });
+    }
+    return "/" + parts.join("/");
+  }
+
+  function mediaItemToSlide(item) {
+    var name = String(item.name || "image");
+    var metadata = mediaFilenameMetadata(name);
+    return {
+      type: "image",
+      name: name,
+      order: metadata.order,
+      kind: metadata.kind,
+      url: item.file || item.preview,
+      thumbnailUrl: item.preview || item.file,
+      referrerPolicy: item.referrerPolicy || "no-referrer"
+    };
+  }
+
+  function mediaFilenameMetadata(name) {
+    var basename = String(name).replace(/\.[^.]+$/, "").toLowerCase();
+    var keywords = ["main", "exterior", "plan", "interior", "real", "detail"];
+    var keyword = keywords.find(function (candidate) {
+      return basename === candidate || basename.indexOf(candidate + "_") === 0;
+    });
+    var priority = keyword ? keywords.indexOf(keyword) : keywords.length;
+    var numberMatch = keyword ? basename.slice(keyword.length).match(/^_(\d+)(?:_|$)/) : null;
+    var number = numberMatch ? Number(numberMatch[1]) : keyword === "main" ? 0 : 1;
+    return { order: priority * 100000 + number, kind: keyword === "main" ? "exterior" : keyword || "image" };
+  }
+
+  function compareSlides(left, right) {
+    return left.order - right.order || String(left.name).localeCompare(String(right.name), "en", { numeric: true, sensitivity: "base" });
+  }
+
+  function createUnavailableProvider() {
+    return { list: async function () { throw new Error("\u041c\u0435\u0434\u0438\u0430\u043f\u0440\u043e\u0432\u0430\u0439\u0434\u0435\u0440 \u043d\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d"); } };
+  }
+
+  function createYandexDiskProvider(mediaConfig) {
+    var endpoint = "https://cloud-api.yandex.net/v1/disk/public/resources";
+    var cache = new Map();
+    var publicKey = String(mediaConfig.publicKey || "").trim();
+    var configured = publicKey && publicKey.indexOf("PASTE_PUBLIC_") !== 0;
+    return { list: listFolderItems, clearCache: function () { cache.clear(); } };
+
+    async function listFolderItems(folderPath, signal) {
+      if (!configured) throw new Error("Yandex Disk is not configured");
+      if (cache.has(folderPath)) return cache.get(folderPath);
+      var allItems = [];
+      var offset = 0;
+      var total = Infinity;
+      var pageSize = 200;
+      while (offset < total) {
+        var url = new URL(endpoint);
+        url.searchParams.set("public_key", publicKey);
+        url.searchParams.set("path", folderPath);
+        url.searchParams.set("limit", String(pageSize));
+        url.searchParams.set("offset", String(offset));
+        url.searchParams.set("preview_size", "L");
+        url.searchParams.set("preview_crop", "false");
+        var response = await fetch(url.toString(), { method: "GET", credentials: "omit", signal: signal });
+        if (response.status === 404) {
+          cache.set(folderPath, []);
+          return [];
+        }
+        if (!response.ok) throw new Error("Yandex Disk HTTP " + response.status);
+        var payload = await response.json();
+        var embedded = payload && payload._embedded ? payload._embedded : { items: [], total: 0 };
+        var items = Array.isArray(embedded.items) ? embedded.items : [];
+        total = Number.isFinite(Number(embedded.total)) ? Number(embedded.total) : offset + items.length;
+        allItems = allItems.concat(items);
+        offset += items.length;
+        if (!items.length || items.length < pageSize) break;
+      }
+      cache.set(folderPath, allItems);
+      return allItems;
+    }
+  }
+
+  function abortError() {
+    try { return new DOMException("Aborted", "AbortError"); }
+    catch (error) {
+      var fallback = new Error("Aborted");
+      fallback.name = "AbortError";
+      return fallback;
+    }
+  }
+})();
+</script>

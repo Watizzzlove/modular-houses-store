@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Архитектура магазина модульных домов и бань",
+    "output": "modular-store-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "client",
+      "type": "external",
+      "label": "Покупатель / Браузер",
+      "sublabel": "Витрина, Каталог, Конструктор, Корзина",
+      "pos": [
+        50,
+        240
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "admin",
+      "type": "external",
+      "label": "Администратор",
+      "sublabel": "Админ-панель (/admin)",
+      "pos": [
+        50,
+        100
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "static",
+      "type": "backend",
+      "label": "Static File Server",
+      "sublabel": "Express (HTML, CSS, JS, /uploads)",
+      "pos": [
+        300,
+        100
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "REST API Маршруты",
+      "sublabel": "Express Router + JWT Middleware",
+      "pos": [
+        300,
+        240
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "tag": "JWT Auth"
+    },
+    {
+      "id": "config_engine",
+      "type": "backend",
+      "label": "Движок Конструктора",
+      "sublabel": "Логика вариантов и цен house-altai",
+      "pos": [
+        550,
+        240
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "order_engine",
+      "type": "backend",
+      "label": "Сервис Заказов и Корзины",
+      "sublabel": "Чекаут + Фейк-оплата 0 руб.",
+      "pos": [
+        550,
+        370
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "media_manager",
+      "type": "backend",
+      "label": "Менеджер Медиафайлов",
+      "sublabel": "Multer (загрузка/удаление фото)",
+      "pos": [
+        550,
+        100
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "SQLite База Данных",
+      "sublabel": "database.sqlite (ACID, реляционная)",
+      "pos": [
+        800,
+        240
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "tag": "Реляционная БД"
+    },
+    {
+      "id": "storage",
+      "type": "cloud",
+      "label": "Локальное Медиахранилище",
+      "sublabel": "Директория /uploads (замена Яндекс Диску)",
+      "pos": [
+        800,
+        100
+      ],
+      "size": [
+        170,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Node.js Сервер Приложения (Express)",
+      "wraps": [
+        "static",
+        "api",
+        "config_engine",
+        "order_engine",
+        "media_manager"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Слой Хранения Данных",
+      "wraps": [
+        "db",
+        "storage"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "client-to-static",
+      "from": "client",
+      "to": "static",
+      "label": "HTML, CSS, модули JS",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "client-to-api",
+      "from": "client",
+      "to": "api",
+      "label": "Запрос каталога и серий",
+      "variant": "emphasis"
+    },
+    {
+      "id": "admin-to-api",
+      "from": "admin",
+      "to": "api",
+      "label": "Авторизованные CRUD запросы",
+      "variant": "security"
+    },
+    {
+      "id": "api-to-config",
+      "from": "api",
+      "to": "config_engine"
+    },
+    {
+      "id": "api-to-order",
+      "from": "api",
+      "to": "order_engine"
+    },
+    {
+      "id": "api-to-media",
+      "from": "api",
+      "to": "media_manager"
+    },
+    {
+      "id": "config-to-db",
+      "from": "config_engine",
+      "to": "db",
+      "label": "Комплектации и цены"
+    },
+    {
+      "id": "order-to-db",
+      "from": "order_engine",
+      "to": "db",
+      "label": "Сохранение заказов и статусов"
+    },
+    {
+      "id": "media-to-storage",
+      "from": "media_manager",
+      "to": "storage",
+      "label": "Файлы фото домов"
+    },
+    {
+      "id": "media-to-db",
+      "from": "media_manager",
+      "to": "db",
+      "label": "Метаданные ракурсов"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Клиентская витрина",
+      "items": [
+        "Модульный чистый JavaScript (ES6+)",
+        "Визуальный конструктор из house-altai.html",
+        "Корзина и блок популярных комплектаций"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Серверная часть",
+      "items": [
+        "Express REST API с JWT-защитой админки",
+        "Симуляция шлюза оплаты (0 руб. / успех)",
+        "Загрузка и организация фотографий через Multer"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Хранение данных",
+      "items": [
+        "SQLite: файл базы в проекте (удобно сдавать в вузе)",
+        "Собственное хранилище фото без зависимости от Я.Диска"
+      ]
+    }
+  ]
+}

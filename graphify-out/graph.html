@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>graphify - graphify-out/graph.html</title>
+<script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"
+        integrity="sha384-Ux6phic9PEHJ38YtrijhkzyJ8yQlH8i/+buBR8s3mAZOJrP1gwyvAcIYl3GWtpX1"
+        crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg: #0f0f1a; --panel: #1a1a2e; --border: #2a2a4e; --input-border: #3a3a5e;
+    --text: #e0e0e0; --text-2: #aaa; --text-3: #ccc; --muted: #555; --count: #666;
+    --neighbor-border: #333; --node-label: #ffffff;
+  }
+  [data-theme="light"] {
+    --bg: #ffffff; --panel: #f8f9fa; --border: #d9dee5; --input-border: #c3cad4;
+    --text: #222222; --text-2: #666666; --text-3: #333333; --muted: #888888; --count: #777777;
+    --neighbor-border: #ccc; --node-label: #222222;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display: flex; height: 100vh; overflow: hidden; }
+  #graph { flex: 1; }
+  #sidebar { width: 280px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  #search-wrap { padding: 12px; border-bottom: 1px solid var(--border); }
+  #search { width: 100%; background: var(--bg); border: 1px solid var(--input-border); color: var(--text); padding: 7px 10px; border-radius: 6px; font-size: 13px; outline: none; }
+  #search:focus { border-color: #4E79A7; }
+  #search-results { max-height: 140px; overflow-y: auto; padding: 4px 12px; border-bottom: 1px solid var(--border); display: none; }
+  .search-item { padding: 4px 6px; cursor: pointer; border-radius: 4px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .search-item:hover { background: var(--border); }
+  #info-panel { padding: 14px; border-bottom: 1px solid var(--border); min-height: 140px; }
+  #info-panel h3 { font-size: 13px; color: var(--text-2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  #info-content { font-size: 13px; color: var(--text-3); line-height: 1.6; }
+  #info-content .field { margin-bottom: 5px; }
+  #info-content .field b { color: var(--text); }
+  #info-content .empty { color: var(--muted); font-style: italic; }
+  .neighbor-link { display: block; padding: 2px 6px; margin: 2px 0; border-radius: 3px; cursor: pointer; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 3px solid var(--neighbor-border); }
+  .neighbor-link:hover { background: var(--border); }
+  #neighbors-list { max-height: 160px; overflow-y: auto; margin-top: 4px; }
+  #legend-wrap { flex: 1; overflow-y: auto; padding: 12px; }
+  #legend-wrap h3 { font-size: 13px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .legend-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; border-radius: 4px; font-size: 12px; }
+  .legend-item:hover { background: var(--border); padding-left: 4px; }
+  .legend-item.dimmed { opacity: 0.35; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-count { color: var(--count); font-size: 11px; }
+  #stats { padding: 10px 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+  #legend-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 4px 0; }
+  #legend-controls label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--text-2); user-select: none; }
+  #legend-controls label:hover { color: var(--text); }
+  .legend-cb, #select-all-cb { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1.5px solid var(--input-border); border-radius: 3px; background: var(--bg); cursor: pointer; position: relative; flex-shrink: 0; }
+  .legend-cb:checked, #select-all-cb:checked { background: #4E79A7; border-color: #4E79A7; }
+  .legend-cb:checked::after, #select-all-cb:checked::after { content: ''; position: absolute; left: 3.5px; top: 1px; width: 4px; height: 7px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  #select-all-cb:indeterminate { background: #4E79A7; border-color: #4E79A7; }
+  #select-all-cb:indeterminate::after { content: ''; position: absolute; left: 2px; top: 5px; width: 8px; height: 2px; background: #fff; border: none; transform: none; }
+  #theme-wrap { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  #theme-wrap button { flex: 1; background: var(--bg); color: var(--text-2); border: 1px solid var(--input-border); border-radius: 4px; padding: 3px 0; font-size: 11px; cursor: pointer; }
+  #theme-wrap button:hover { color: var(--text); }
+  #theme-wrap button[aria-pressed="true"] { background: #4E79A7; border-color: #4E79A7; color: #fff; }
+</style>
+<script id="graphify-theme-init">
+// Apply the saved theme before first paint (#3894). No saved choice keeps the
+// historical dark look; "system" follows prefers-color-scheme.
+(function () {
+  var pref = null;
+  try { pref = localStorage.getItem('graphify-theme'); } catch (e) {}
+  var t = pref === 'light' ? 'light'
+    : pref === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light'
+    : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+</head>
+<body>
+<div id="graph"></div>
+<div id="sidebar">
+  <div id="theme-wrap" role="group" aria-label="Theme">
+    <button type="button" data-theme-choice="light">Light</button>
+    <button type="button" data-theme-choice="dark">Dark</button>
+    <button type="button" data-theme-choice="system">System</button>
+  </div>
+  <div id="search-wrap">
+    <input id="search" type="text" placeholder="Search nodes..." autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+  <div id="info-panel">
+    <h3>Node Info</h3>
+    <div id="info-content"><span class="empty">Click a node to inspect it</span></div>
+  </div>
+  <div id="legend-wrap">
+    <h3>Communities</h3>
+    <div id="legend-controls">
+      <label><input type="checkbox" id="select-all-cb" checked onchange="toggleAllCommunities(!this.checked)">Select All</label>
+    </div>
+    <div id="legend"></div>
+  </div>
+  <div id="stats">100 nodes &middot; 145 edges &middot; 12 communities</div>
+</div>
+<script>
+const RAW_NODES = [{"id": "src_db_database_initschema", "label": "initSchema()", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "initSchema()", "community": 1, "community_name": "database.js", "source_file": "src/db/database.js", "file_type": "code", "degree": 1}, {"id": "src_db_seed_runseed", "label": "runSeed()", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "runSeed()", "community": 2, "community_name": "server.js", "source_file": "src/db/seed.js", "file_type": "code", "degree": 2}, {"id": "src_middleware_auth_requireauth", "label": "requireAuth()", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "requireAuth()", "community": 3, "community_name": "routes/auth.js", "source_file": "src/middleware/auth.js", "file_type": "code", "degree": 3}, {"id": "src_routes_orders_getsetting", "label": "getSetting()", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "getSetting()", "community": 4, "community_name": "orders.js", "source_file": "src/routes/orders.js", "file_type": "code", "degree": 1}, {"id": "test_api_test_request", "label": "request()", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "request()", "community": 6, "community_name": "api.test.js", "source_file": "test/api.test.js", "file_type": "code", "degree": 2}, {"id": "test_api_test_runtests", "label": "runTests()", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "runTests()", "community": 6, "community_name": "api.test.js", "source_file": "test/api.test.js", "file_type": "code", "degree": 3}, {"id": "public_js_app_escapehtml", "label": "escapeHtml()", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "escapeHtml()", "community": 7, "community_name": "app.js", "source_file": "public/js/app.js", "file_type": "code", "degree": 3}, {"id": "public_js_app_formatprice", "label": "formatPrice()", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "formatPrice()", "community": 7, "community_name": "app.js", "source_file": "public/js/app.js", "file_type": "code", "degree": 3}, {"id": "public_js_app_loadcatalog", "label": "loadCatalog()", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "loadCatalog()", "community": 7, "community_name": "app.js", "source_file": "public/js/app.js", "file_type": "code", "degree": 3}, {"id": "public_js_app_loadpopularpresets", "label": "loadPopularPresets()", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "loadPopularPresets()", "community": 7, "community_name": "app.js", "source_file": "public/js/app.js", "file_type": "code", "degree": 3}, {"id": "public_js_app_loadsitecontent", "label": "loadSiteContent()", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "loadSiteContent()", "community": 7, "community_name": "app.js", "source_file": "public/js/app.js", "file_type": "code", "degree": 1}, {"id": "package", "label": "package.json", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 32.9, "font": {"size": 12, "color": "#ffffff"}, "title": "package.json", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 16}, {"id": "package_author", "label": "author", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "author", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "package_dependencies", "label": "dependencies", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 21.4, "font": {"size": 12, "color": "#ffffff"}, "title": "dependencies", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 8}, {"id": "package_dependencies_bcryptjs", "label": "bcryptjs@^3.0.2", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "bcryptjs@^3.0.2", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 2}, {"id": "package_dependencies_better_sqlite3", "label": "better-sqlite3@^11.8.1", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "better-sqlite3@^11.8.1", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 2}, {"id": "package_dependencies_cors", "label": "cors@^2.8.5", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "cors@^2.8.5", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 2}, {"id": "package_dependencies_dotenv", "label": "dotenv@^16.4.7", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "dotenv@^16.4.7", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 2}, {"id": "package_dependencies_multer", "label": "multer@^1.4.5-lts.1", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "multer@^1.4.5-lts.1", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 2}, {"id": "package_description", "label": "description", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "description", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "package_keywords", "label": "keywords", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "keywords", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "package_license", "label": "license", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "license", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "package_main", "label": "main", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "main", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "package_name", "label": "name", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "name", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "package_version", "label": "version", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "version", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "ref_bcryptjs", "label": "bcryptjs", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 15.7, "font": {"size": 12, "color": "#ffffff"}, "title": "bcryptjs", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "concept", "degree": 4}, {"id": "ref_better_sqlite3", "label": "better-sqlite3", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "better-sqlite3", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "concept", "degree": 3}, {"id": "ref_cors", "label": "cors", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "cors", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "concept", "degree": 3}, {"id": "ref_dotenv", "label": "dotenv", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "dotenv", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "concept", "degree": 2}, {"id": "ref_multer", "label": "multer", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "multer", "community": 0, "community_name": "package.json", "source_file": "package.json", "file_type": "concept", "degree": 3}, {"id": "src_db_database", "label": "database.js", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 34.3, "font": {"size": 12, "color": "#ffffff"}, "title": "database.js", "community": 1, "community_name": "database.js", "source_file": "src/db/database.js", "file_type": "code", "degree": 17}, {"id": "src_db_database_database", "label": "Database", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "Database", "community": 1, "community_name": "database.js", "source_file": "src/db/database.js", "file_type": "code", "degree": 1}, {"id": "src_db_database_datadir", "label": "dataDir", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "dataDir", "community": 1, "community_name": "database.js", "source_file": "src/db/database.js", "file_type": "code", "degree": 1}, {"id": "src_db_database_db", "label": "db", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 20.0, "font": {"size": 12, "color": "#ffffff"}, "title": "db", "community": 1, "community_name": "database.js", "source_file": "src/db/database.js", "file_type": "code", "degree": 7}, {"id": "src_db_database_dbpath", "label": "dbPath", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "dbPath", "community": 1, "community_name": "database.js", "source_file": "src/db/database.js", "file_type": "code", "degree": 1}, {"id": "src_db_database_fs", "label": "fs", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "fs", "community": 1, "community_name": "database.js", "source_file": "src/db/database.js", "file_type": "code", "degree": 1}, {"id": "src_db_database_path", "label": "path", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "path", "community": 1, "community_name": "database.js", "source_file": "src/db/database.js", "file_type": "code", "degree": 1}, {"id": "src_db_database_uploadsdir", "label": "uploadsDir", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "uploadsDir", "community": 1, "community_name": "database.js", "source_file": "src/db/database.js", "file_type": "code", "degree": 1}, {"id": "src_routes_catalog", "label": "catalog.js", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "catalog.js", "community": 1, "community_name": "database.js", "source_file": "src/routes/catalog.js", "file_type": "code", "degree": 6}, {"id": "src_routes_catalog_express", "label": "express", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "express", "community": 1, "community_name": "database.js", "source_file": "src/routes/catalog.js", "file_type": "code", "degree": 1}, {"id": "src_routes_catalog_router", "label": "router", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "router", "community": 1, "community_name": "database.js", "source_file": "src/routes/catalog.js", "file_type": "code", "degree": 2}, {"id": "src_routes_configurator", "label": "routes/configurator.js", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "routes/configurator.js", "community": 1, "community_name": "database.js", "source_file": "src/routes/configurator.js", "file_type": "code", "degree": 6}, {"id": "src_routes_configurator_express", "label": "express", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "express", "community": 1, "community_name": "database.js", "source_file": "src/routes/configurator.js", "file_type": "code", "degree": 1}, {"id": "src_routes_configurator_router", "label": "router", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "router", "community": 1, "community_name": "database.js", "source_file": "src/routes/configurator.js", "file_type": "code", "degree": 2}, {"id": "public_js_cart", "label": "cart.js", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "cart.js", "community": 10, "community_name": "cart.js", "source_file": "public/js/cart.js", "file_type": "code", "degree": 1}, {"id": "public_js_cart_cart", "label": "Cart", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "Cart", "community": 10, "community_name": "cart.js", "source_file": "public/js/cart.js", "file_type": "code", "degree": 1}, {"id": "public_js_configurator", "label": "js/configurator.js", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "js/configurator.js", "community": 11, "community_name": "js/configurator.js", "source_file": "public/js/configurator.js", "file_type": "code", "degree": 1}, {"id": "public_js_configurator_configurator", "label": "Configurator", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "Configurator", "community": 11, "community_name": "js/configurator.js", "source_file": "public/js/configurator.js", "file_type": "code", "degree": 1}, {"id": "server", "label": "server.js", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 40.0, "font": {"size": 12, "color": "#ffffff"}, "title": "server.js", "community": 2, "community_name": "server.js", "source_file": "server.js", "file_type": "code", "degree": 21}, {"id": "server_app", "label": "app", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "app", "community": 2, "community_name": "server.js", "source_file": "server.js", "file_type": "code", "degree": 1}, {"id": "server_cors", "label": "cors", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "cors", "community": 2, "community_name": "server.js", "source_file": "server.js", "file_type": "code", "degree": 1}, {"id": "server_express", "label": "express", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "express", "community": 2, "community_name": "server.js", "source_file": "server.js", "file_type": "code", "degree": 1}, {"id": "server_fs", "label": "fs", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "fs", "community": 2, "community_name": "server.js", "source_file": "server.js", "file_type": "code", "degree": 1}, {"id": "server_path", "label": "path", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "path", "community": 2, "community_name": "server.js", "source_file": "server.js", "file_type": "code", "degree": 1}, {"id": "src_db_seed", "label": "seed.js", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 24.3, "font": {"size": 12, "color": "#ffffff"}, "title": "seed.js", "community": 2, "community_name": "server.js", "source_file": "src/db/seed.js", "file_type": "code", "degree": 10}, {"id": "src_db_seed_bcrypt", "label": "bcrypt", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "bcrypt", "community": 2, "community_name": "server.js", "source_file": "src/db/seed.js", "file_type": "code", "degree": 1}, {"id": "src_db_seed_fs", "label": "fs", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "fs", "community": 2, "community_name": "server.js", "source_file": "src/db/seed.js", "file_type": "code", "degree": 1}, {"id": "src_db_seed_path", "label": "path", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "path", "community": 2, "community_name": "server.js", "source_file": "src/db/seed.js", "file_type": "code", "degree": 1}, {"id": "package_dependencies_jsonwebtoken", "label": "jsonwebtoken@^9.0.2", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "jsonwebtoken@^9.0.2", "community": 3, "community_name": "routes/auth.js", "source_file": "package.json", "file_type": "code", "degree": 2}, {"id": "src_middleware_auth", "label": "middleware/auth.js", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 17.1, "font": {"size": 12, "color": "#ffffff"}, "title": "middleware/auth.js", "community": 3, "community_name": "routes/auth.js", "source_file": "src/middleware/auth.js", "file_type": "code", "degree": 5}, {"id": "src_middleware_auth_jwt", "label": "jwt", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "jwt", "community": 3, "community_name": "routes/auth.js", "source_file": "src/middleware/auth.js", "file_type": "code", "degree": 1}, {"id": "src_routes_auth", "label": "routes/auth.js", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 28.6, "font": {"size": 12, "color": "#ffffff"}, "title": "routes/auth.js", "community": 3, "community_name": "routes/auth.js", "source_file": "src/routes/auth.js", "file_type": "code", "degree": 13}, {"id": "src_routes_auth_bcrypt", "label": "bcrypt", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "bcrypt", "community": 3, "community_name": "routes/auth.js", "source_file": "src/routes/auth.js", "file_type": "code", "degree": 1}, {"id": "src_routes_auth_express", "label": "express", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "express", "community": 3, "community_name": "routes/auth.js", "source_file": "src/routes/auth.js", "file_type": "code", "degree": 1}, {"id": "src_routes_auth_jwt", "label": "jwt", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "jwt", "community": 3, "community_name": "routes/auth.js", "source_file": "src/routes/auth.js", "file_type": "code", "degree": 1}, {"id": "src_routes_auth_router", "label": "router", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "router", "community": 3, "community_name": "routes/auth.js", "source_file": "src/routes/auth.js", "file_type": "code", "degree": 2}, {"id": "ref_jsonwebtoken", "label": "jsonwebtoken", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 15.7, "font": {"size": 12, "color": "#ffffff"}, "title": "jsonwebtoken", "community": 3, "community_name": "routes/auth.js", "source_file": "package.json", "file_type": "concept", "degree": 4}, {"id": "package_dependencies_express", "label": "express@^4.21.2", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "express@^4.21.2", "community": 4, "community_name": "orders.js", "source_file": "package.json", "file_type": "code", "degree": 2}, {"id": "src_routes_orders", "label": "orders.js", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 25.7, "font": {"size": 12, "color": "#ffffff"}, "title": "orders.js", "community": 4, "community_name": "orders.js", "source_file": "src/routes/orders.js", "file_type": "code", "degree": 11}, {"id": "src_routes_orders_crypto", "label": "crypto", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "crypto", "community": 4, "community_name": "orders.js", "source_file": "src/routes/orders.js", "file_type": "code", "degree": 1}, {"id": "src_routes_orders_express", "label": "express", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "express", "community": 4, "community_name": "orders.js", "source_file": "src/routes/orders.js", "file_type": "code", "degree": 1}, {"id": "src_routes_orders_https", "label": "https", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "https", "community": 4, "community_name": "orders.js", "source_file": "src/routes/orders.js", "file_type": "code", "degree": 1}, {"id": "src_routes_orders_router", "label": "router", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "router", "community": 4, "community_name": "orders.js", "source_file": "src/routes/orders.js", "file_type": "code", "degree": 2}, {"id": "ref_express", "label": "express", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 21.4, "font": {"size": 12, "color": "#ffffff"}, "title": "express", "community": 4, "community_name": "orders.js", "source_file": "package.json", "file_type": "concept", "degree": 8}, {"id": "src_routes_admin", "label": "routes/admin.js", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 32.9, "font": {"size": 12, "color": "#ffffff"}, "title": "routes/admin.js", "community": 5, "community_name": "routes/admin.js", "source_file": "src/routes/admin.js", "file_type": "code", "degree": 16}, {"id": "src_routes_admin_express", "label": "express", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "express", "community": 5, "community_name": "routes/admin.js", "source_file": "src/routes/admin.js", "file_type": "code", "degree": 1}, {"id": "src_routes_admin_fs", "label": "fs", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "fs", "community": 5, "community_name": "routes/admin.js", "source_file": "src/routes/admin.js", "file_type": "code", "degree": 1}, {"id": "src_routes_admin_multer", "label": "multer", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "multer", "community": 5, "community_name": "routes/admin.js", "source_file": "src/routes/admin.js", "file_type": "code", "degree": 1}, {"id": "src_routes_admin_path", "label": "path", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "path", "community": 5, "community_name": "routes/admin.js", "source_file": "src/routes/admin.js", "file_type": "code", "degree": 1}, {"id": "src_routes_admin_router", "label": "router", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "router", "community": 5, "community_name": "routes/admin.js", "source_file": "src/routes/admin.js", "file_type": "code", "degree": 2}, {"id": "src_routes_admin_storage", "label": "storage", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "storage", "community": 5, "community_name": "routes/admin.js", "source_file": "src/routes/admin.js", "file_type": "code", "degree": 1}, {"id": "src_routes_admin_upload", "label": "upload", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "upload", "community": 5, "community_name": "routes/admin.js", "source_file": "src/routes/admin.js", "file_type": "code", "degree": 1}, {"id": "test_api_test", "label": "api.test.js", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "api.test.js", "community": 6, "community_name": "api.test.js", "source_file": "test/api.test.js", "file_type": "code", "degree": 6}, {"id": "test_api_test_assert", "label": "assert", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 12.9, "font": {"size": 0, "color": "#ffffff"}, "title": "assert", "community": 6, "community_name": "api.test.js", "source_file": "test/api.test.js", "file_type": "code", "degree": 2}, {"id": "test_api_test_http", "label": "http", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "http", "community": 6, "community_name": "api.test.js", "source_file": "test/api.test.js", "file_type": "code", "degree": 1}, {"id": "public_js_app", "label": "app.js", "color": {"background": "#FF9DA7", "border": "#FF9DA7", "highlight": {"background": "#ffffff", "border": "#FF9DA7"}}, "size": 17.1, "font": {"size": 12, "color": "#ffffff"}, "title": "app.js", "community": 7, "community_name": "app.js", "source_file": "public/js/app.js", "file_type": "code", "degree": 5}, {"id": "package_scripts", "label": "scripts", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 17.1, "font": {"size": 12, "color": "#ffffff"}, "title": "scripts", "community": 8, "community_name": "scripts", "source_file": "package.json", "file_type": "code", "degree": 5}, {"id": "package_scripts_dev", "label": "dev", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "dev", "community": 8, "community_name": "scripts", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "package_scripts_seed", "label": "seed", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "seed", "community": 8, "community_name": "scripts", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "package_scripts_start", "label": "start", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "start", "community": 8, "community_name": "scripts", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "package_scripts_test", "label": "test", "color": {"background": "#9C755F", "border": "#9C755F", "highlight": {"background": "#ffffff", "border": "#9C755F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "test", "community": 8, "community_name": "scripts", "source_file": "package.json", "file_type": "code", "degree": 1}, {"id": "public_js_admin", "label": "js/admin.js", "color": {"background": "#BAB0AC", "border": "#BAB0AC", "highlight": {"background": "#ffffff", "border": "#BAB0AC"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "js/admin.js", "community": 9, "community_name": "js/admin.js", "source_file": "public/js/admin.js", "file_type": "code", "degree": 1}, {"id": "public_js_admin_admin", "label": "Admin", "color": {"background": "#BAB0AC", "border": "#BAB0AC", "highlight": {"background": "#ffffff", "border": "#BAB0AC"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "Admin", "community": 9, "community_name": "js/admin.js", "source_file": "public/js/admin.js", "file_type": "code", "degree": 1}, {"id": "ref_fs", "label": "ref_fs", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 15.7, "font": {"size": 12, "color": "#ffffff"}, "title": "ref_fs", "community": 2, "community_name": "server.js", "source_file": "", "file_type": "concept", "degree": 4}, {"id": "ref_path", "label": "ref_path", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 15.7, "font": {"size": 12, "color": "#ffffff"}, "title": "ref_path", "community": 2, "community_name": "server.js", "source_file": "", "file_type": "concept", "degree": 4}, {"id": "src_middleware_auth_jwt_secret", "label": "src_middleware_auth_jwt_secret", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "src_middleware_auth_jwt_secret", "community": 3, "community_name": "routes/auth.js", "source_file": "", "file_type": "concept", "degree": 1}, {"id": "ref_crypto", "label": "ref_crypto", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "ref_crypto", "community": 4, "community_name": "orders.js", "source_file": "", "file_type": "concept", "degree": 1}, {"id": "ref_https", "label": "ref_https", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "ref_https", "community": 4, "community_name": "orders.js", "source_file": "", "file_type": "concept", "degree": 1}, {"id": "ref_assert", "label": "ref_assert", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "ref_assert", "community": 6, "community_name": "api.test.js", "source_file": "", "file_type": "concept", "degree": 1}, {"id": "ref_http", "label": "ref_http", "color": {"background": "#B07AA1", "border": "#B07AA1", "highlight": {"background": "#ffffff", "border": "#B07AA1"}}, "size": 11.4, "font": {"size": 0, "color": "#ffffff"}, "title": "ref_http", "community": 6, "community_name": "api.test.js", "source_file": "", "file_type": "concept", "degree": 1}];
+const RAW_EDGES = [{"from": "src_db_database", "to": "src_db_database_initschema", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_db_seed_runseed", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_seed", "to": "src_db_seed_runseed", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_middleware_auth_requireauth", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "src_middleware_auth_requireauth", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_middleware_auth", "to": "src_middleware_auth_requireauth", "label": "indirect_call", "title": "indirect_call [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "src_routes_orders", "to": "src_routes_orders_getsetting", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "test_api_test_runtests", "to": "test_api_test_request", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "test_api_test", "to": "test_api_test_request", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "test_api_test_runtests", "to": "test_api_test_assert", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "test_api_test", "to": "test_api_test_runtests", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_app_loadcatalog", "to": "public_js_app_escapehtml", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_app_loadpopularpresets", "to": "public_js_app_escapehtml", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_app", "to": "public_js_app_escapehtml", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_app_loadcatalog", "to": "public_js_app_formatprice", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_app_loadpopularpresets", "to": "public_js_app_formatprice", "label": "calls", "title": "calls [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_app", "to": "public_js_app_formatprice", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_app", "to": "public_js_app_loadcatalog", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_app", "to": "public_js_app_loadpopularpresets", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_app", "to": "public_js_app_loadsitecontent", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "ref_better_sqlite3", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "ref_bcryptjs", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "ref_cors", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "ref_dotenv", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "ref_express", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "ref_jsonwebtoken", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "ref_multer", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "package_keywords", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "package_author", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "package_name", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "package_license", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "package_dependencies", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "package_version", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "package_description", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "package_main", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package", "to": "package_scripts", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies", "to": "package_dependencies_better_sqlite3", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies", "to": "package_dependencies_bcryptjs", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies", "to": "package_dependencies_cors", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies", "to": "package_dependencies_dotenv", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies", "to": "package_dependencies_express", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies", "to": "package_dependencies_jsonwebtoken", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies", "to": "package_dependencies_multer", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies_bcryptjs", "to": "ref_bcryptjs", "label": "declares", "title": "declares [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies_better_sqlite3", "to": "ref_better_sqlite3", "label": "declares", "title": "declares [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies_cors", "to": "ref_cors", "label": "declares", "title": "declares [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies_dotenv", "to": "ref_dotenv", "label": "declares", "title": "declares [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies_multer", "to": "ref_multer", "label": "declares", "title": "declares [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_seed", "to": "ref_bcryptjs", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "ref_bcryptjs", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "ref_better_sqlite3", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "ref_cors", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "ref_multer", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "ref_path", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "ref_fs", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_seed", "to": "src_db_database", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_db_database", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "src_db_database", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_catalog", "to": "src_db_database", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_configurator", "to": "src_db_database", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_orders", "to": "src_db_database", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "src_db_database_database", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "src_db_database_uploadsdir", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "src_db_database_dbpath", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "src_db_database_db", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "src_db_database_path", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "src_db_database_fs", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_database", "to": "src_db_database_datadir", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_seed", "to": "src_db_database_db", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_db_database_db", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "src_db_database_db", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_catalog", "to": "src_db_database_db", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_configurator", "to": "src_db_database_db", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_orders", "to": "src_db_database_db", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_catalog", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_catalog", "to": "ref_express", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_catalog", "to": "src_routes_catalog_express", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_catalog", "to": "src_routes_catalog_router", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_catalog_router", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_configurator", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_configurator", "to": "ref_express", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_configurator", "to": "src_routes_configurator_express", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_configurator", "to": "src_routes_configurator_router", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_configurator_router", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_cart", "to": "public_js_cart_cart", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_configurator", "to": "public_js_configurator_configurator", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_orders_router", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_admin_router", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_auth_router", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_orders", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_admin", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_db_seed", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "ref_express", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "ref_path", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "ref_fs", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "src_routes_auth", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "server_express", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "server_app", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "server_cors", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "server_path", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "server", "to": "server_fs", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_seed", "to": "ref_fs", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_seed", "to": "ref_path", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_seed", "to": "src_db_seed_bcrypt", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_seed", "to": "src_db_seed_fs", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_db_seed", "to": "src_db_seed_path", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies_jsonwebtoken", "to": "ref_jsonwebtoken", "label": "declares", "title": "declares [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_middleware_auth", "to": "ref_jsonwebtoken", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_middleware_auth", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "src_middleware_auth", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_middleware_auth", "to": "src_middleware_auth_jwt", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "src_middleware_auth_jwt_secret", "label": "imports", "title": "imports [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "ref_express", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "ref_jsonwebtoken", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "src_routes_auth_express", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "src_routes_auth_router", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "src_routes_auth_bcrypt", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_auth", "to": "src_routes_auth_jwt", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_dependencies_express", "to": "ref_express", "label": "declares", "title": "declares [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_orders", "to": "ref_express", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_orders", "to": "ref_https", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_orders", "to": "ref_crypto", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_orders", "to": "src_routes_orders_express", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_orders", "to": "src_routes_orders_router", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_orders", "to": "src_routes_orders_https", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_orders", "to": "src_routes_orders_crypto", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "ref_express", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "ref_path", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "ref_fs", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_routes_admin_express", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_routes_admin_storage", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_routes_admin_router", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_routes_admin_upload", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_routes_admin_multer", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_routes_admin_path", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "src_routes_admin", "to": "src_routes_admin_fs", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "test_api_test", "to": "ref_http", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "test_api_test", "to": "ref_assert", "label": "imports_from", "title": "imports_from [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "test_api_test", "to": "test_api_test_http", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "test_api_test", "to": "test_api_test_assert", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_scripts", "to": "package_scripts_test", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_scripts", "to": "package_scripts_start", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_scripts", "to": "package_scripts_dev", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "package_scripts", "to": "package_scripts_seed", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "public_js_admin", "to": "public_js_admin_admin", "label": "contains", "title": "contains [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}];
+const LEGEND = [{"cid": 0, "color": "#4E79A7", "label": "package.json", "count": 19}, {"cid": 1, "color": "#F28E2B", "label": "database.js", "count": 15}, {"cid": 2, "color": "#E15759", "label": "server.js", "count": 13}, {"cid": 3, "color": "#76B7B2", "label": "routes/auth.js", "count": 11}, {"cid": 4, "color": "#59A14F", "label": "orders.js", "count": 10}, {"cid": 5, "color": "#EDC948", "label": "routes/admin.js", "count": 8}, {"cid": 6, "color": "#B07AA1", "label": "api.test.js", "count": 7}, {"cid": 7, "color": "#FF9DA7", "label": "app.js", "count": 6}, {"cid": 8, "color": "#9C755F", "label": "scripts", "count": 5}, {"cid": 9, "color": "#BAB0AC", "label": "js/admin.js", "count": 2}, {"cid": 10, "color": "#4E79A7", "label": "cart.js", "count": 2}, {"cid": 11, "color": "#F28E2B", "label": "js/configurator.js", "count": 2}];
+
+// HTML-escape helper — prevents XSS when injecting graph data into innerHTML
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Build vis datasets
+const nodesDS = new vis.DataSet(RAW_NODES.map((n, i) => ({
+  id: n.id, label: n.label, color: n.color, size: n.size,
+  font: n.font, title: n.title,
+  // Fermat/golden-angle spiral seed positions (#3699): spreading nodes out
+  // before physics runs keeps avoidOverlap from computing near-zero-distance
+  // repulsion that blows the BarnesHut recursion into a stack overflow on large
+  // graphs. `i` is the map index — physics still settles small graphs identically.
+  x: 30 * Math.sqrt(i) * Math.cos(i * 2.4),
+  y: 30 * Math.sqrt(i) * Math.sin(i * 2.4),
+  community: n.community, community_name: n.community_name,
+  source_file: n.source_file, file_type: n.file_type, degree: n.degree,
+  member_count: n.member_count,
+})));
+
+const edgesDS = new vis.DataSet(RAW_EDGES.map((e, i) => ({
+  id: i, from: e.from, to: e.to,
+  label: '',
+  title: e.title,
+  dashes: e.dashes,
+  width: e.width,
+  color: e.color,
+  arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+})));
+
+const container = document.getElementById('graph');
+const network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, {
+  physics: {
+    enabled: true,
+    solver: 'forceAtlas2Based',
+    forceAtlas2Based: {
+      gravitationalConstant: -60,
+      centralGravity: 0.005,
+      springLength: 120,
+      springConstant: 0.08,
+      damping: 0.4,
+      avoidOverlap: 0.8,
+    },
+    stabilization: { iterations: 200, fit: true },
+  },
+  interaction: {
+    hover: true,
+    tooltipDelay: 100,
+    hideEdgesOnDrag: true,
+    navigationButtons: false,
+    keyboard: false,
+  },
+  nodes: { shape: 'dot', borderWidth: 1.5 },
+  edges: { smooth: { type: 'continuous', roundness: 0.2 }, selectionWidth: 3 },
+});
+
+// Theme toggle (#3894): Light / Dark / System, persisted in localStorage.
+const THEME_KEY = 'graphify-theme';
+const themeMQ = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+let themeLabelColor = '#ffffff';  // matches the per-node font color set in Python
+function themePref() {
+  let p = null;
+  try { p = localStorage.getItem(THEME_KEY); } catch (e) {}
+  return (p === 'light' || p === 'dark' || p === 'system') ? p : null;
+}
+function applyTheme(pref) {
+  const t = pref === 'light' ? 'light' : (pref === 'system' && themeMQ && themeMQ.matches) ? 'light' : 'dark';
+  const root = document.documentElement;
+  if (!root) return;
+  root.setAttribute('data-theme', t);
+  document.querySelectorAll('[data-theme-choice]').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.themeChoice === (pref || 'dark')));
+  });
+  const labelColor = getComputedStyle(root).getPropertyValue('--node-label').trim();
+  if (labelColor && labelColor !== themeLabelColor) {
+    themeLabelColor = labelColor;
+    nodesDS.update(nodesDS.get().map(n => ({ id: n.id, font: Object.assign({}, n.font, { color: labelColor }) })));
+  }
+}
+document.querySelectorAll('[data-theme-choice]').forEach(b => {
+  b.addEventListener('click', () => {
+    const pref = b.dataset.themeChoice;
+    try { localStorage.setItem(THEME_KEY, pref); } catch (e) {}
+    applyTheme(pref);
+  });
+});
+if (themeMQ) {
+  const onSchemeChange = () => { if (themePref() === 'system') applyTheme('system'); };
+  if (themeMQ.addEventListener) themeMQ.addEventListener('change', onSchemeChange);
+  else if (themeMQ.addListener) themeMQ.addListener(onSchemeChange);
+}
+applyTheme(themePref());
+
+network.once('stabilizationIterationsDone', () => {
+  network.setOptions({ physics: { enabled: false } });
+});
+
+function showInfo(nodeId) {
+  const n = nodesDS.get(nodeId);
+  if (!n) return;
+  const neighborIds = network.getConnectedNodes(nodeId);
+  const neighborItems = neighborIds.map(nid => {
+    const nb = nodesDS.get(nid);
+    const color = nb ? nb.color.background : '#555';
+    return `<span class="neighbor-link" style="border-left-color:${esc(color)}" data-nid="${esc(nid)}">${esc(nb ? nb.label : nid)}</span>`;
+  }).join('');
+  const isMetaNode = !n.file_type && !n.source_file;
+  let html = `<div class="field"><b>${esc(n.label)}</b></div>`;
+  if (!isMetaNode) {
+    html += `<div class="field">Type: ${esc(n.file_type || 'unknown')}</div>`;
+  }
+  html += `<div class="field">Community: ${esc(n.community_name || '')}</div>`;
+  if (!isMetaNode) {
+    html += `<div class="field">Source: ${esc(n.source_file || '-')}</div>`;
+  } else if (n.member_count !== undefined && n.member_count !== null) {
+    html += `<div class="field">Members: ${esc(n.member_count)}</div>`;
+  }
+  html += `<div class="field">Degree: ${n.degree}</div>`;
+  if (neighborIds.length) {
+    html += `<div class="field" style="margin-top:8px;color:var(--text-2);font-size:11px">Neighbors (${neighborIds.length})</div><div id="neighbors-list">${neighborItems}</div>`;
+  }
+  document.getElementById('info-content').innerHTML = html;
+}
+
+function focusNode(nodeId) {
+  network.focus(nodeId, { scale: 1.4, animation: true });
+  network.selectNodes([nodeId]);
+  showInfo(nodeId);
+}
+
+// Neighbor links use a data attribute + one delegated listener rather than an
+// inline onclick. A node id/label sourced from a document or a scraped URL
+// (graphify add) can contain a double-quote; dropping the stringified id
+// unescaped into a quoted onclick both broke every link and allowed a hostile
+// source to inject an event handler into the local report (stored XSS, #1838).
+// esc() on data-nid keeps the value inside the attribute; the listener reads it
+// back verbatim. Bound to document so it survives the innerHTML rebuild that
+// recreates #neighbors-list on each showInfo().
+document.addEventListener('click', e => {
+  const el = e.target.closest('.neighbor-link');
+  if (el && el.dataset.nid !== undefined) focusNode(el.dataset.nid);
+});
+
+// Sidebar tooltips reuse vis-network's .vis-tooltip style and 100ms tooltipDelay.
+// Names get one only when CSS ellipsis truncates them (the full text is still in
+// the DOM); counts always get one, to say what the number is. Text is set with
+// textContent only (labels are untrusted). Delegated on document so rows rebuilt
+// later (search results, showInfo()) are covered.
+const sidebarTip = document.createElement('div');
+sidebarTip.className = 'vis-tooltip';
+sidebarTip.style.cssText = 'white-space: normal; max-width: 360px; overflow-wrap: break-word;';
+document.body.appendChild(sidebarTip);
+let sidebarTipTimer = null;
+let sidebarTipEl = null;    // element whose text the tooltip shows
+let sidebarTipZone = null;  // element the pointer must leave to hide it
+function hideSidebarTip() {
+  clearTimeout(sidebarTipTimer);
+  sidebarTip.style.visibility = 'hidden';
+  sidebarTip.textContent = '';
+  sidebarTipEl = sidebarTipZone = null;
+}
+document.addEventListener('mouseover', e => {
+  const zone = e.target.closest && e.target.closest('.legend-count, .legend-item, .search-item, .neighbor-link');
+  // Anywhere on a legend row except its count (dot, checkbox, gaps, padding)
+  // stands for the row's name, so moving within the row never re-triggers it.
+  const el = zone && zone.classList.contains('legend-item') ? zone.querySelector('.legend-label') : zone;
+  if (!el || el === sidebarTipEl) return;
+  hideSidebarTip();
+  const isCount = el.classList.contains('legend-count');
+  if (!isCount && el.scrollWidth <= el.clientWidth) return;
+  const text = isCount ? `${el.textContent} ${el.textContent === '1' ? 'node' : 'nodes'}` : el.textContent;
+  sidebarTipEl = el;
+  sidebarTipZone = zone;
+  const x = e.clientX, y = e.clientY;
+  sidebarTipTimer = setTimeout(() => {
+    sidebarTip.textContent = text;
+    sidebarTip.style.left = sidebarTip.style.top = '0px';  // measure at full max-width
+    sidebarTip.style.visibility = 'visible';
+    const w = sidebarTip.offsetWidth, h = sidebarTip.offsetHeight;
+    sidebarTip.style.left = Math.max(4, Math.min(x + 12, window.innerWidth - w - 4)) + 'px';
+    sidebarTip.style.top = (y + 16 + h > window.innerHeight ? Math.max(4, y - h - 8) : y + 16) + 'px';
+  }, 100);
+});
+document.addEventListener('mouseout', e => {
+  if (sidebarTipZone && !sidebarTipZone.contains(e.relatedTarget)) hideSidebarTip();
+});
+// A click rebuilds or hides the row (showInfo(), search pick) without a mouseout.
+document.addEventListener('mousedown', hideSidebarTip);
+
+// Track hovered node — hover detection is more reliable than click params
+let hoveredNodeId = null;
+network.on('hoverNode', params => {
+  hoveredNodeId = params.node;
+  container.style.cursor = 'pointer';
+});
+network.on('blurNode', () => {
+  hoveredNodeId = null;
+  container.style.cursor = 'default';
+});
+container.addEventListener('click', () => {
+  if (hoveredNodeId !== null) {
+    showInfo(hoveredNodeId);
+    network.selectNodes([hoveredNodeId]);
+  }
+});
+network.on('click', params => {
+  if (params.nodes.length > 0) {
+    showInfo(params.nodes[0]);
+  } else if (hoveredNodeId === null) {
+    document.getElementById('info-content').innerHTML = '<span class="empty">Click a node to inspect it</span>';
+  }
+});
+
+const searchInput = document.getElementById('search');
+const searchResults = document.getElementById('search-results');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+  searchResults.innerHTML = '';
+  if (!q) { searchResults.style.display = 'none'; return; }
+  const matches = RAW_NODES.filter(n => n.label.toLowerCase().includes(q)).slice(0, 20);
+  if (!matches.length) { searchResults.style.display = 'none'; return; }
+  searchResults.style.display = 'block';
+  matches.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'search-item';
+    el.textContent = n.label;
+    el.style.borderLeft = `3px solid ${n.color.background}`;
+    el.style.paddingLeft = '8px';
+    el.onclick = () => {
+      network.focus(n.id, { scale: 1.5, animation: true });
+      network.selectNodes([n.id]);
+      showInfo(n.id);
+      searchResults.style.display = 'none';
+      searchInput.value = '';
+    };
+    searchResults.appendChild(el);
+  });
+});
+document.addEventListener('click', e => {
+  if (!searchResults.contains(e.target) && e.target !== searchInput)
+    searchResults.style.display = 'none';
+});
+
+const hiddenCommunities = new Set();
+
+const selectAllCb = document.getElementById('select-all-cb');
+
+function updateSelectAllState() {
+  const total = LEGEND.length;
+  const hidden = hiddenCommunities.size;
+  selectAllCb.checked = hidden === 0;
+  selectAllCb.indeterminate = hidden > 0 && hidden < total;
+}
+
+function toggleAllCommunities(hide) {
+  document.querySelectorAll('.legend-item').forEach(item => {
+    hide ? item.classList.add('dimmed') : item.classList.remove('dimmed');
+  });
+  document.querySelectorAll('.legend-cb').forEach(cb => {
+    cb.checked = !hide;
+  });
+  LEGEND.forEach(c => {
+    if (hide) hiddenCommunities.add(c.cid); else hiddenCommunities.delete(c.cid);
+  });
+  const updates = RAW_NODES.map(n => ({ id: n.id, hidden: hide }));
+  nodesDS.update(updates);
+  updateSelectAllState();
+}
+
+const legendEl = document.getElementById('legend');
+LEGEND.forEach(c => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.className = 'legend-cb';
+  cb.checked = true;
+  cb.addEventListener('change', (e) => {
+    e.stopPropagation();
+    if (cb.checked) {
+      hiddenCommunities.delete(c.cid);
+      item.classList.remove('dimmed');
+    } else {
+      hiddenCommunities.add(c.cid);
+      item.classList.add('dimmed');
+    }
+    const updates = RAW_NODES
+      .filter(n => n.community === c.cid)
+      .map(n => ({ id: n.id, hidden: !cb.checked }));
+    nodesDS.update(updates);
+    updateSelectAllState();
+  });
+  item.innerHTML = `<div class="legend-dot" style="background:${c.color}"></div>
+    <span class="legend-label">${c.label}</span>
+    <span class="legend-count">${c.count}</span>`;
+  item.prepend(cb);
+  item.onclick = (e) => {
+    if (e.target === cb) return;
+    cb.checked = !cb.checked;
+    cb.dispatchEvent(new Event('change'));
+  };
+  legendEl.appendChild(item);
+});
+</script>
+<script>
+// Render hyperedges as shaded regions
+const hyperedges = [];
+// afterDrawing passes ctx already transformed to network coordinate space.
+// Draw node positions raw — no manual pan/zoom/DPR math needed.
+
+// Andrew's monotone chain. Returns the hull in counter-clockwise order, which
+// is what the perimeter must be traced in. Collinear and duplicate points
+// collapse to the extremes, so degenerate member sets render as a segment
+// rather than a zero-area crossed path.
+function convexHull(pts) {
+    const p = pts.slice().sort((a, b) => (a.x - b.x) || (a.y - b.y));
+    if (p.length < 3) return p;
+    const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    const build = seq => {
+        const out = [];
+        for (const q of seq) {
+            while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], q) <= 0) out.pop();
+            out.push(q);
+        }
+        out.pop();
+        return out;
+    };
+    const hull = build(p).concat(build(p.slice().reverse()));
+    return hull.length >= 3 ? hull : p;
+}
+network.on('afterDrawing', function(ctx) {
+    hyperedges.forEach(h => {
+        const positions = h.nodes
+            .map(nid => network.getPositions([nid])[nid])
+            .filter(p => p !== undefined);
+        if (positions.length < 2) return;
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        ctx.fillStyle = '#6366f1';
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Centroid and expanded hull in network coordinates.
+        // The perimeter must follow hull order, not h.nodes order: tracing the
+        // raw member order self-intersects whenever the layout does not happen
+        // to place members in angular order, filling as crossed wedges.
+        const cx = positions.reduce((s, p) => s + p.x, 0) / positions.length;
+        const cy = positions.reduce((s, p) => s + p.y, 0) / positions.length;
+        const hull = convexHull(positions);
+        const expanded = hull.map(p => ({
+            x: cx + (p.x - cx) * 1.15,
+            y: cy + (p.y - cy) * 1.15
+        }));
+        ctx.moveTo(expanded[0].x, expanded[0].y);
+        expanded.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 0.4;
+        ctx.stroke();
+        // Label
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#4f46e5';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(h.label, cx, cy - 5);
+        ctx.restore();
+    });
+});
+</script>
+</body>
+</html>

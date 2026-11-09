@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Панель управления | DokaBani Admin</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- AUTH MODAL OVERLAY -->
+  <div class="admin-auth-overlay" data-admin-auth-overlay>
+    <!-- LOGIN BOX -->
+    <div class="auth-card" data-auth-login-box>
+      <h2>Вход в панель админа</h2>
+      <p>Введите учетные данные для управления сайтом</p>
+      <form data-login-form>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" class="form-input" value="admin@doka.local" required>
+        </div>
+        <div class="form-group">
+          <label>Пароль</label>
+          <input type="password" name="password" class="form-input" value="admin123" required>
+        </div>
+        <button type="submit" class="btn-admin" style="margin-top: 10px;">Войти</button>
+      </form>
+      <div class="auth-toggle-link">
+        Нет аккаунта? <a data-switch-to-reg>Зарегистрироваться</a>
+      </div>
+    </div>
+
+    <!-- REGISTER BOX -->
+    <div class="auth-card" data-auth-reg-box style="display: none;">
+      <h2>Регистрация администратора</h2>
+      <p>Создание новой учетной записи с правами управления</p>
+      <form data-reg-form>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" class="form-input" placeholder="newadmin@doka.pro" required>
+        </div>
+        <div class="form-group">
+          <label>Пароль (минимум 6 символов)</label>
+          <input type="password" name="password" class="form-input" placeholder="••••••••" required minlength="6">
+        </div>
+        <button type="submit" class="btn-admin" style="margin-top: 10px;">Зарегистрироваться</button>
+      </form>
+      <div class="auth-toggle-link">
+        Уже есть учетная запись? <a data-switch-to-login>Войти</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD LAYOUT -->
+  <div class="admin-layout">
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <span style="color: var(--admin-accent); font-size: 22px;">⌂</span>
+        <span>DokaBani Admin</span>
+      </div>
+
+      <nav class="admin-nav">
+        <button type="button" class="admin-nav-item is-active" data-tab="catalog">
+          <span>📋</span> Каталог и цены
+        </button>
+        <button type="button" class="admin-nav-item" data-tab="media">
+          <span>🖼️</span> Управление фото
+        </button>
+        <button type="button" class="admin-nav-item" data-tab="orders">
+          <span>📦</span> Заказы клиентов
+        </button>
+        <button type="button" class="admin-nav-item" data-tab="content">
+          <span>📝</span> Тексты и контакты
+        </button>
+        <button type="button" class="admin-nav-item" data-tab="settings">
+          <span>💳</span> Настройки платежей
+        </button>
+      </nav>
+
+      <div class="admin-sidebar-footer">
+        <div>
+          <div style="font-size: 11px; color: var(--admin-muted);">Вы вошли как:</div>
+          <strong data-admin-user-email style="font-size: 13px;">admin</strong>
+        </div>
+        <button type="button" data-admin-logout style="background:none; border:none; color:#e53e3e; cursor:pointer; font-weight:700;">Выход</button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+      <div class="admin-header">
+        <h1>Панель управления сайтом</h1>
+        <a href="/" target="_blank" class="btn btn-secondary" style="font-size: 13px; padding: 8px 14px;">
+          🌐 Открыть витрину сайта ↗
+        </a>
+      </div>
+
+      <!-- TAB 1: CATALOG & PRICES -->
+      <section data-tab-content="catalog">
+        <div class="admin-card">
+          <div class="admin-card-head">
+            <h3>Серии модульных домов и бань</h3>
+          </div>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Серия</th>
+                <th>Слоган</th>
+                <th>Базовая цена</th>
+                <th>Комплектации</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody data-admin-series-list>
+              <!-- Filled via admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 2: MEDIA MANAGEMENT -->
+      <section data-tab-content="media" style="display: none;">
+        <div class="admin-card">
+          <div class="admin-card-head">
+            <h3>Загрузка новой фотографии</h3>
+          </div>
+          <form data-upload-media-form style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap: 14px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Серия</label>
+              <select name="seriesId" class="form-input" data-upload-series-select required></select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Цвет фасада</label>
+              <select name="color" class="form-input">
+                <option value="bronze">Бронза</option>
+                <option value="beige">Бежевый</option>
+                <option value="graphite">Графит</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Ракурс / Тип</label>
+              <select name="kind" class="form-input">
+                <option value="exterior">Вид снаружи (фасад)</option>
+                <option value="plan">Планировка (чертеж)</option>
+                <option value="interior">Интерьер</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Файл фото (JPG, PNG, WEBP)</label>
+              <input type="file" name="photo" class="form-input" accept="image/*" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="height: 42px; font-size: 14px;">
+              Загрузить в галерею
+            </button>
+          </form>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-head">
+            <h3>Галерея загруженных фото</h3>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label style="font-size: 13px; font-weight: 700;">Фильтр по серии:</label>
+              <select class="form-input" style="width: 200px;" data-media-series-select></select>
+            </div>
+          </div>
+          <div class="admin-media-grid" data-admin-media-grid>
+            <!-- Filled via admin.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: ORDERS -->
+      <section data-tab-content="orders" style="display: none;">
+        <div class="admin-card">
+          <div class="admin-card-head">
+            <h3>Поступившие заказы и платежи</h3>
+          </div>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Номер и дата</th>
+                <th>Клиент</th>
+                <th>Адрес</th>
+                <th>Состав</th>
+                <th>Сумма</th>
+                <th>Статус оплаты</th>
+              </tr>
+            </thead>
+            <tbody data-admin-orders-list>
+              <!-- Filled via admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 4: SITE CONTENT -->
+      <section data-tab-content="content" style="display: none;">
+        <div class="admin-card">
+          <div class="admin-card-head">
+            <h3>Редактирование текстов и контактов</h3>
+          </div>
+          <form data-admin-content-form style="display: flex; flex-direction: column; gap: 16px; max-width: 680px;">
+            <div class="form-group">
+              <label>Основной телефон компании</label>
+              <input type="text" name="site_phone" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label>Второй телефон (отдел продаж)</label>
+              <input type="text" name="site_phone_secondary" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Email для заявок</label>
+              <input type="email" name="site_email" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Главный заголовок витрины (Hero Title)</label>
+              <input type="text" name="hero_title" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label>Подзаголовок витрины (Hero Subtitle)</label>
+              <textarea name="hero_subtitle" class="form-input" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Текст блока «О производстве»</label>
+              <textarea name="about_text" class="form-input" rows="4"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 220px;">
+              Сохранить изменения
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 5: SETTINGS & YOOKASSA -->
+      <section data-tab-content="settings" style="display: none;">
+        <div class="admin-card" style="max-width: 680px;">
+          <div class="admin-card-head">
+            <h3>Интеграция с платежным шлюзом (ЮKassa)</h3>
+          </div>
+          <p style="font-size: 14px; color: var(--admin-muted); margin-bottom: 20px;">
+            Вы можете указать реальные тестовые ключи из личного кабинета ЮKassa для проверки настоящей тестовой оплаты с редиректом. Если ключи не указаны, сайт использует встроенный тестовый шлюз (0 ₽).
+          </p>
+
+          <form data-admin-settings-form style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="form-group">
+              <label>Идентификатор магазина (Shop ID)</label>
+              <input type="text" name="yookassa_shop_id" class="form-input" placeholder="Например: 123456">
+            </div>
+            <div class="form-group">
+              <label>Секретный ключ (Secret Key)</label>
+              <input type="password" name="yookassa_secret_key" class="form-input" placeholder="test_••••••••••••••••••••••••">
+            </div>
+            <div class="form-group">
+              <label>Тестовый режим</label>
+              <select name="yookassa_test_mode" class="form-input">
+                <option value="true">Включен (Тестовые транзакции)</option>
+                <option value="false">Боевой режим</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 220px;">
+              Сохранить параметры
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: CONFIGURATIONS & PRICES -->
+  <div class="admin-auth-overlay" data-configs-modal style="display: none;">
+    <div class="auth-card" style="width: min(720px, 100%);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <h3 data-configs-series-name style="font-size: 20px; font-weight: 800;">Размеры и цены</h3>
+        <button type="button" data-close-configs-modal style="background:none; border:none; font-size: 20px; cursor:pointer;">✕</button>
+      </div>
+
+      <table class="admin-table" style="margin-bottom: 24px;">
+        <thead>
+          <tr>
+            <th>Размер</th>
+            <th>Площадь</th>
+            <th>Цена (₽)</th>
+            <th>Сохранить</th>
+          </tr>
+        </thead>
+        <tbody data-configs-list></tbody>
+      </table>
+
+      <!-- ADD NEW SIZE FORM -->
+      <div style="border-top: 1px solid var(--admin-line); padding-top: 18px;">
+        <h4 style="font-size: 15px; margin-bottom: 12px;">Добавить новый размер к серии</h4>
+        <form data-add-config-form style="display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; align-items: end;">
+          <input type="hidden" name="seriesId" data-add-config-series-id>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size: 11px;">Ключ (напр. 10x8)</label>
+            <input type="text" name="key" class="form-input" placeholder="10x8" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size: 11px;">Название (напр. 10×8)</label>
+            <input type="text" name="label" class="form-input" placeholder="10×8" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size: 11px;">Ширина / Длина (м)</label>
+            <div style="display: flex; gap: 4px;">
+              <input type="number" step="0.1" name="width" class="form-input" placeholder="10" required>
+              <input type="number" step="0.1" name="length" class="form-input" placeholder="8" required>
+            </div>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label style="font-size: 11px;">Цена (₽)</label>
+            <input type="number" name="price" class="form-input" placeholder="4500000" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="height: 38px; font-size: 12px; padding: 0 14px;">
+            + Добавить
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>
