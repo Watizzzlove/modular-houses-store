@@ -119,17 +119,16 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// Фолбек: если запрос не к API и путь не совпал ни с чем, отдаем главную страницу
+// Фолбек: если путь не совпал ни с чем, отдаем 404
 app.use((req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Эндпоинт не найден' });
   }
-  const indexPath = path.join(pagesDir, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(500).send('Сервер запущен, но index.html не найден.');
+  const notFoundPath = path.join(pagesDir, '404.html');
+  if (fs.existsSync(notFoundPath)) {
+    return res.status(404).sendFile(notFoundPath);
   }
+  res.status(404).sendFile(path.join(pagesDir, 'index.html'));
 });
 
 // Запуск прослушивания HTTP порта
