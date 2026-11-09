@@ -469,4 +469,19 @@ router.get('/orders/export/csv', (req, res) => {
   }
 });
 
+// GET /api/admin/backup/db
+// Резервное копирование: безопасная выгрузка файла базы данных SQLite (.sqlite)
+router.get('/backup/db', (req, res) => {
+  try {
+    const dbPath = path.join(__dirname, '../../data/store.db');
+    if (!fs.existsSync(dbPath)) {
+      return res.status(404).json({ error: 'Файл базы данных не найден' });
+    }
+    const filename = `modul_haus_backup_${new Date().toISOString().slice(0, 10)}.sqlite`;
+    res.download(dbPath, filename);
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка создания бэкапа: ' + err.message });
+  }
+});
+
 module.exports = router;

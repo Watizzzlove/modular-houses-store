@@ -350,6 +350,8 @@
       <a href="#get-admin-outbox" class="sidebar-link"><span class="method-tag get">GET</span> /api/admin/outbox</a>
       <a href="#post-test-mail" class="sidebar-link"><span class="method-tag post">POST</span> .../settings/test-mail</a>
       <a href="#post-test-telegram" class="sidebar-link"><span class="method-tag post">POST</span> .../settings/test-telegram</a>
+      <a href="#get-admin-export-csv" class="sidebar-link"><span class="method-tag get">GET</span> .../orders/export/csv</a>
+      <a href="#get-admin-backup-db" class="sidebar-link"><span class="method-tag get">GET</span> .../backup/db</a>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -616,6 +618,26 @@ terraceType: "covered"</div>
             <span class="endpoint-auth-badge">Требуется JWT Admin</span>
           </div>
           <div class="endpoint-desc">Проверка подключения к Telegram Bot API и отправка проверочного сообщения в чат или канал.</div>
+        </div>
+
+        <!-- GET /api/admin/orders/export/csv -->
+        <div class="endpoint-card" id="get-admin-export-csv">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/admin/orders/export/csv</span>
+            <span class="endpoint-auth-badge">Требуется JWT Admin</span>
+          </div>
+          <div class="endpoint-desc">Выгрузка базы заказов в CSV файл с UTF-8 BOM для прямого открытия в Microsoft Excel без искажения кириллицы.</div>
+        </div>
+
+        <!-- GET /api/admin/backup/db -->
+        <div class="endpoint-card" id="get-admin-backup-db">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/admin/backup/db</span>
+            <span class="endpoint-auth-badge">Требуется JWT Admin</span>
+          </div>
+          <div class="endpoint-desc">Резервная копия: скачивание физического SQLite-файла базы данных со всеми таблицами для резервного хранения.</div>
         </div>
       </section>
     </main>

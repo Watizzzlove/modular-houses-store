@@ -319,7 +319,18 @@ async function runFeatureTests() {
   assert.ok(typeof csvRes.data === 'string' && csvRes.data.includes('Номер заказа'));
   console.log('✓ SEO robots.txt, sitemap.xml and CSV export verified successfully');
 
-  console.log('\n🎉 ALL 15 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
+  console.log('16. Testing SQLite database backup download endpoint...');
+  const backupRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/admin/backup/db',
+    method: 'GET',
+    headers: { 'Authorization': `Bearer ${adminToken}` }
+  });
+  assert.strictEqual(backupRes.status, 200);
+  console.log('✓ SQLite database backup endpoint successfully served binary archive');
+
+  console.log('\n🎉 ALL 16 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
 }
 
 runFeatureTests().catch(err => {
