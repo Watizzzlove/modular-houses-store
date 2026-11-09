@@ -334,6 +334,7 @@
       <a href="#get-auth-orders" class="sidebar-link"><span class="method-tag get">GET</span> /api/auth/my-orders</a>
 
       <div class="sidebar-group-title">4. Заказы и платежи</div>
+      <a href="#post-orders-promocode" class="sidebar-link"><span class="method-tag post">POST</span> .../promocode</a>
       <a href="#post-orders" class="sidebar-link"><span class="method-tag post">POST</span> /api/orders</a>
       <a href="#post-orders-pay" class="sidebar-link"><span class="method-tag post">POST</span> /api/orders/:id/pay</a>
       <a href="#post-orders-confirm" class="sidebar-link"><span class="method-tag post">POST</span> /api/orders/:id/confirm</a>
@@ -494,7 +495,22 @@ terraceType: "covered"</div>
 
       <!-- 4. ORDERS & PAYMENT -->
       <section>
-        <h2 style="font-size: 20px; font-weight: 800; margin: 32px 0 16px;">4. Заказы и платежный шлюз</h2>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 32px 0 16px;">4. Заказы, промокоды и платежный шлюз</h2>
+
+        <!-- POST /api/orders/promocode -->
+        <div class="endpoint-card" id="post-orders-promocode">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/orders/promocode</span>
+          </div>
+          <div class="endpoint-desc">Проверка и расчет скидки по промокоду (например, <code>MODUL2026</code> на 5% или <code>DOKA100</code> на 100 000 ₽). Возвращает тип, величину скидки и описание.</div>
+          <div class="code-label">Тело запроса:</div>
+          <div class="code-box">{ "code": "MODUL2026" }</div>
+          <div class="try-box">
+            <button class="try-btn" onclick="testEndpoint('/api/orders/promocode', 'POST', { code: 'MODUL2026' }, this)">Выполнить тест с кодом MODUL2026 (Try)</button>
+            <div class="try-result"></div>
+          </div>
+        </div>
 
         <!-- POST /api/orders -->
         <div class="endpoint-card" id="post-orders">

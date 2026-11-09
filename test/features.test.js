@@ -330,7 +330,53 @@ async function runFeatureTests() {
   assert.strictEqual(backupRes.status, 200);
   console.log('✓ SQLite database backup endpoint successfully served binary archive');
 
-  console.log('\n🎉 ALL 16 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
+  console.log('17. Testing promocode discount validation and order checkout...');
+  const validPromoRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/orders/promocode',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }, { code: 'MODUL2026' });
+  assert.strictEqual(validPromoRes.status, 200);
+  assert.strictEqual(validPromoRes.data.valid, true);
+  assert.strictEqual(validPromoRes.data.value, 5);
+
+  const invalidPromoRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/orders/promocode',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }, { code: 'INVALID_CODE_XYZ' });
+  assert.strictEqual(invalidPromoRes.status, 404);
+
+  const promoOrderRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/orders',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${clientToken}`
+    }
+  }, {
+    customerName: 'Иван Тестов',
+    customerPhone: testPhone,
+    customerEmail: testEmail,
+    customerAddress: 'г. Челябинск, ул. Ленина, 10',
+    promocode: 'MODUL2026',
+    items: [{
+      title: 'Дом «Алтай» 9×9,5 м',
+      price: 1000000,
+      quantity: 1
+    }]
+  });
+  assert.strictEqual(promoOrderRes.status, 201);
+  assert.strictEqual(promoOrderRes.data.totalPrice, 950000, '5% discount should reduce 1,000,000 to 950,000');
+  console.log('✓ Promocode endpoint and order checkout discount verified successfully');
+
+  console.log('\n🎉 ALL 17 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
 }
 
 runFeatureTests().catch(err => {

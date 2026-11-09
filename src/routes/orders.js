@@ -32,10 +32,42 @@ function getSetting(key) {
   return row ? row.value : null;
 }
 
+// Справочник активных промокодов
+const PROMOCODES = {
+  'MODUL2026': { type: 'percent', value: 5, description: 'Скидка 5% на модульный дом' },
+  'DOKA100': { type: 'fixed', value: 100000, description: 'Скидка 100 000 ₽ на заказ' },
+  'LETO': { type: 'percent', value: 3, description: 'Скидка 3% на заказ' },
+  'WELCOME': { type: 'fixed', value: 50000, description: 'Приветственная скидка 50 000 ₽' }
+};
+
+// POST /api/orders/promocode
+// Проверка и применение промокода
+router.post('/promocode', (req, res) => {
+  const { code } = req.body;
+  if (!code || !String(code).trim()) {
+    return res.status(400).json({ valid: false, error: 'Введите промокод' });
+  }
+
+  const cleanCode = String(code).trim().toUpperCase();
+  const promo = PROMOCODES[cleanCode];
+
+  if (!promo) {
+    return res.status(404).json({ valid: false, error: 'Промокод не найден или истек' });
+  }
+
+  res.json({
+    valid: true,
+    code: cleanCode,
+    type: promo.type,
+    value: promo.value,
+    description: promo.description
+  });
+});
+
 // POST /api/orders
 // Создание нового заказа из корзины покупателя
 router.post('/', optionalAuth, (req, res) => {
-  const { customerName, customerPhone, customerEmail, customerAddress, customerComment, items } = req.body;
+  const { customerName, customerPhone, customerEmail, customerAddress, customerComment, items, promocode } = req.body;
 
   if (!customerName || !customerName.trim()) {
     return res.status(400).json({ error: 'Пожалуйста, укажите ваше имя' });
@@ -49,11 +81,40 @@ router.post('/', optionalAuth, (req, res) => {
     return res.status(400).json({ error: 'Корзина пуста' });
   }
 
-  // Считаем итоговую стоимость корзины
-  let totalPrice = 0;
+  // Считаем базовую стоимость корзины
+  let baseTotalPrice = 0;
   for (const item of items) {
-    totalPrice += Number(item.price || 0) * Number(item.quantity || 1);
+    baseTotalPrice += Number(item.price || 0) * Number(item.quantity || 1);
   }
+
+  // Расчет скидки по промокоду
+  let discountAmount = 0;
+  let appliedPromo = null;
+  const storedItems = [...items];
+
+  if (promocode) {
+    const cleanCode = String(promocode).trim().toUpperCase();
+    const promo = PROMOCODES[cleanCode];
+    if (promo) {
+      appliedPromo = cleanCode;
+      if (promo.type === 'percent') {
+        discountAmount = Math.round(baseTotalPrice * (promo.value / 100));
+      } else if (promo.type === 'fixed') {
+        discountAmount = Math.min(baseTotalPrice, promo.value);
+      }
+      if (discountAmount > 0) {
+        storedItems.push({
+          title: `Скидка по промокоду ${appliedPromo}`,
+          subtitle: promo.description,
+          price: -discountAmount,
+          quantity: 1,
+          isDiscount: true
+        });
+      }
+    }
+  }
+
+  const totalPrice = Math.max(0, baseTotalPrice - discountAmount);
 
   // Генерация уникального человекочитаемого номера заказа: DK-ГГГГММДД-XXXX
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -86,7 +147,7 @@ router.post('/', optionalAuth, (req, res) => {
     (customerEmail || '').trim(),
     (customerAddress || '').trim(),
     (customerComment || '').trim(),
-    JSON.stringify(items),
+    JSON.stringify(storedItems),
     totalPrice
   );
 
@@ -99,7 +160,7 @@ router.post('/', optionalAuth, (req, res) => {
     customer_email: (customerEmail || '').trim(),
     customer_address: (customerAddress || '').trim(),
     customer_comment: (customerComment || '').trim(),
-    items,
+    items: storedItems,
     total_price: totalPrice,
     status: 'NEW'
   };

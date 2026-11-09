@@ -8,6 +8,7 @@
 
 const Cart = (function () {
   const STORAGE_KEY = 'doka_cart';
+  const PROMO_KEY = 'doka_promocode';
 
   function getItems() {
     try {
@@ -21,6 +22,71 @@ const Cart = (function () {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     updateBadges();
     renderDrawer();
+  }
+
+  function getAppliedPromo() {
+    try {
+      return JSON.parse(localStorage.getItem(PROMO_KEY) || 'null');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function setAppliedPromo(promo) {
+    if (promo) {
+      localStorage.setItem(PROMO_KEY, JSON.stringify(promo));
+    } else {
+      localStorage.removeItem(PROMO_KEY);
+    }
+    renderDrawer();
+  }
+
+  function getTotals() {
+    const items = getItems();
+    const baseTotal = items.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+    const promo = getAppliedPromo();
+    let discount = 0;
+    if (promo && baseTotal > 0) {
+      if (promo.type === 'percent') {
+        discount = Math.round(baseTotal * (Number(promo.value) / 100));
+      } else if (promo.type === 'fixed') {
+        discount = Math.min(baseTotal, Number(promo.value));
+      }
+    }
+    const finalTotal = Math.max(0, baseTotal - discount);
+    return { baseTotal, discount, finalTotal, promo };
+  }
+
+  function getTotalPrice() {
+    return getTotals().finalTotal;
+  }
+
+  async function applyPromocode(code) {
+    if (!code || !String(code).trim()) {
+      showToast('Введите промокод');
+      return;
+    }
+    try {
+      const res = await fetch('/api/orders/promocode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: String(code).trim() })
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setAppliedPromo(data);
+        showToast(`Промокод «${data.code}» успешно применен!`);
+      } else {
+        showToast(data.error || 'Промокод не найден или истек');
+      }
+    } catch (err) {
+      showToast('Ошибка проверки промокода');
+    }
+  }
+
+  function removePromocode() {
+    setAppliedPromo(null);
+    showToast('Промокод отменен');
   }
 
   function addItem(item) {
@@ -71,6 +137,7 @@ const Cart = (function () {
 
   function clear() {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PROMO_KEY);
     updateBadges();
     renderDrawer();
   }
@@ -170,8 +237,49 @@ const Cart = (function () {
       `;
     }).join('');
 
+    const { baseTotal, discount, finalTotal, promo } = getTotals();
+
+    // Ensure promo container exists in footerEl
+    let promoContainer = footerEl.querySelector('[data-cart-promo-container]');
+    if (!promoContainer) {
+      promoContainer = document.createElement('div');
+      promoContainer.setAttribute('data-cart-promo-container', '');
+      const totalRow = footerEl.querySelector('.cart-total-row');
+      if (totalRow) {
+        footerEl.insertBefore(promoContainer, totalRow);
+      } else {
+        footerEl.prepend(promoContainer);
+      }
+    }
+
+    if (promo) {
+      promoContainer.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:8px 12px; margin-bottom:8px; font-size:13px; color:#065f46;">
+          <div>
+            <strong>✓ ${promo.code}</strong> (${promo.description})
+          </div>
+          <button type="button" data-cart-promo-remove style="background:none; border:none; color:#065f46; cursor:pointer; font-size:16px; font-weight:bold; padding:0 4px; line-height:1;" title="Удалить промокод">✕</button>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#059669; font-weight:600; margin-bottom:8px;">
+          <span>Скидка:</span>
+          <span>-${formatPrice(discount)}</span>
+        </div>
+      `;
+    } else {
+      promoContainer.innerHTML = `
+        <div style="display:flex; gap:6px; margin-bottom:10px;">
+          <input type="text" data-cart-promo-input placeholder="Промокод (напр. MODUL2026)" style="flex:1; height:36px; padding:0 10px; border:1px solid #dcd7ce; border-radius:8px; font-size:12.5px; text-transform:uppercase; outline:none; background:#ffffff;">
+          <button type="button" data-cart-promo-apply style="background:#1c1d1f; color:#ffffff; border:none; border-radius:8px; padding:0 12px; font-size:12.5px; font-weight:600; cursor:pointer;">Применить</button>
+        </div>
+      `;
+    }
+
     if (totalEl) {
-      totalEl.textContent = formatPrice(getTotalPrice());
+      if (discount > 0) {
+        totalEl.innerHTML = `<span style="font-size: 13px; color: #8e8b85; text-decoration: line-through; margin-right: 6px; font-weight: normal;">${formatPrice(baseTotal)}</span> ${formatPrice(finalTotal)}`;
+      } else {
+        totalEl.textContent = formatPrice(finalTotal);
+      }
     }
   }
 
@@ -572,10 +680,22 @@ const Cart = (function () {
     if (summaryEl) {
       const items = getItems();
       const count = items.reduce((sum, i) => sum + (Number(i.quantity) || 1), 0);
+      const { baseTotal, discount, finalTotal, promo } = getTotals();
       summaryEl.innerHTML = `
         <div class="checkout-summary-box">
-          <span>Товаров в заказе: <strong>${count} шт.</strong></span>
-          <span class="checkout-summary-price">Итого: <strong>${formatPrice(getTotalPrice())}</strong></span>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Товаров в заказе: <strong>${count} шт.</strong></span>
+            <span>${formatPrice(baseTotal)}</span>
+          </div>
+          ${discount > 0 && promo ? `
+          <div style="display: flex; justify-content: space-between; color: #059669; font-weight: 600; margin-bottom: 4px;">
+            <span>Скидка (${promo.code}):</span>
+            <span>-${formatPrice(discount)}</span>
+          </div>` : ''}
+          <div style="display: flex; justify-content: space-between; border-top: 1px dashed #e2ded5; padding-top: 6px; margin-top: 4px;">
+            <span class="checkout-summary-price">Итого к оплате:</span>
+            <span class="checkout-summary-price"><strong>${formatPrice(finalTotal)}</strong></span>
+          </div>
         </div>
       `;
     }
@@ -608,13 +728,15 @@ const Cart = (function () {
       return;
     }
 
+    const { promo } = getTotals();
     const payload = {
       customerName: formData.get('name'),
       customerPhone: customerPhone,
       customerEmail: formData.get('email'),
       customerAddress: formData.get('address'),
       customerComment: formData.get('comment'),
-      items
+      items,
+      promocode: promo ? promo.code : null
     };
 
     const submitBtn = formEl.querySelector('button[type="submit"]');
@@ -817,6 +939,30 @@ const Cart = (function () {
       }
       return;
     }
+
+    // Apply promocode
+    const promoApplyBtn = e.target.closest('[data-cart-promo-apply]');
+    if (promoApplyBtn) {
+      e.preventDefault();
+      const input = document.querySelector('[data-cart-promo-input]');
+      if (input) applyPromocode(input.value);
+      return;
+    }
+
+    // Remove promocode
+    const promoRemoveBtn = e.target.closest('[data-cart-promo-remove]');
+    if (promoRemoveBtn) {
+      e.preventDefault();
+      removePromocode();
+      return;
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target && e.target.matches('[data-cart-promo-input]')) {
+      e.preventDefault();
+      applyPromocode(e.target.value);
+    }
   });
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -851,6 +997,10 @@ const Cart = (function () {
     removeItem,
     changeQuantity,
     clear,
+    getTotals,
+    getAppliedPromo,
+    applyPromocode,
+    removePromocode,
     openDrawer,
     closeDrawer,
     openCheckoutModal,
