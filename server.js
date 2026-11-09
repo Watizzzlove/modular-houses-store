@@ -48,6 +48,11 @@ app.use('/saunas', express.static(path.join(__dirname, 'public', 'catalog', 'sau
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/pages', express.static(path.join(__dirname, 'public', 'pages')));
 
+// Favicon
+app.get(['/favicon.ico', '/favicon.svg'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'favicon.svg'));
+});
+
 // Подключение роутов API
 app.use('/api/auth', authRoutes);
 app.use('/api/catalog', catalogRoutes);

@@ -7,7 +7,9 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "seed": "node src/db/seed.js",
-    "test": "node test/api.test.js"
+    "test": "node test/api.test.js",
+    "test:features": "node test/features.test.js",
+    "test:all": "node test/api.test.js && node test/features.test.js"
   },
   "keywords": [
     "modular-houses",
