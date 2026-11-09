@@ -93,6 +93,12 @@ npm start
 node server.js
 ```
 
+### 🐳 Запуск через Docker (быстрый старт в контейнере)
+
+```bash
+docker compose up --build
+```
+
 Сервер запустится по адресу:
 - Сайт: **http://localhost:3030/**
 - Каталог домов: **http://localhost:3030/houses.html**

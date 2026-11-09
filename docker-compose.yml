@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: modul-haus-app
+    restart: unless-stopped
+    ports:
+      - "3030:3030"
+    environment:
+      - PORT=3030
+      - NODE_ENV=production
+      - JWT_SECRET=modul-haus-docker-production-secret-2026
+      - ADMIN_NOTIFY_EMAIL=watislove@internet.ru
+      - MAIL_SERVICE=formsubmit
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads

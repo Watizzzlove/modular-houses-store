@@ -982,7 +982,13 @@
                     Оплатить заказ (0 ₽) →
                   </a>
                 </div>
-              ` : ''}
+              ` : `
+                <div style="margin-top: 18px; display: flex; justify-content: flex-end; gap: 10px;">
+                  <a href="/order-success.html?orderId=${order.id}" style="font-size: 13px; padding: 8px 16px; border: 1px solid #dcdad4; border-radius: 10px; background: #ffffff; color: #1c1d1f; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                    📄 Спецификация и договор
+                  </a>
+                </div>
+              `}
             </div>
           `;
         }).join('');
