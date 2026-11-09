@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>REST API Documentation — MODUL.HAUS | Спецификация бэкенда</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    :root {
+      --docs-bg: #faf9f6;
+      --docs-sidebar-w: 280px;
+      --docs-card-bg: #ffffff;
+      --docs-border: #e8e6e1;
+      --docs-text: #1c1d1f;
+      --docs-muted: #6a6864;
+      --code-bg: #141416;
+      --code-text: #e6edf3;
+      --method-get: #0969da;
+      --method-post: #1a7f37;
+      --method-patch: #9a6700;
+      --method-delete: #cf222e;
+    }
+
+    body {
+      background: var(--docs-bg);
+      color: var(--docs-text);
+      font-family: var(--font-body);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .docs-header {
+      background: #141416;
+      color: #fff;
+      padding: 16px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .docs-header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .docs-logo {
+      font-family: var(--font-heading);
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .docs-badge {
+      background: rgba(245, 162, 10, 0.2);
+      color: #f5a20a;
+      border: 1px solid rgba(245, 162, 10, 0.35);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .docs-header-right a {
+      color: #d1d5db;
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      margin-left: 18px;
+      transition: color 0.2s;
+    }
+
+    .docs-header-right a:hover {
+      color: #fff;
+    }
+
+    .docs-layout {
+      display: flex;
+      flex: 1;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* SIDEBAR */
+    .docs-sidebar {
+      width: var(--docs-sidebar-w);
+      background: #ffffff;
+      border-right: 1px solid var(--docs-border);
+      padding: 24px 16px;
+      position: sticky;
+      top: 61px;
+      height: calc(100vh - 61px);
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    .sidebar-group-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--docs-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin: 20px 0 8px 8px;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      color: var(--docs-text);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .sidebar-link:hover {
+      background: #f4f3f0;
+      color: #000;
+    }
+
+    .method-tag {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: monospace;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    .method-tag.get { background: #ddf4ff; color: var(--method-get); }
+    .method-tag.post { background: #dafbe1; color: var(--method-post); }
+    .method-tag.patch { background: #fff8c5; color: var(--method-patch); }
+    .method-tag.delete { background: #ffebe9; color: var(--method-delete); }
+
+    /* CONTENT AREA */
+    .docs-content {
+      flex: 1;
+      padding: 36px 44px;
+      max-width: 960px;
+      box-sizing: border-box;
+    }
+
+    .docs-intro {
+      margin-bottom: 40px;
+      border-bottom: 1px solid var(--docs-border);
+      padding-bottom: 24px;
+    }
+
+    .docs-intro h1 {
+      font-family: var(--font-heading);
+      font-size: 32px;
+      font-weight: 900;
+      margin: 0 0 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .docs-intro p {
+      font-size: 15px;
+      color: var(--docs-muted);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* ENDPOINT CARD */
+    .endpoint-card {
+      background: var(--docs-card-bg);
+      border: 1px solid var(--docs-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+      scroll-margin-top: 80px;
+    }
+
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .endpoint-url {
+      font-family: monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: #111;
+      background: #f4f3f0;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .endpoint-auth-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #fff8eb;
+      color: #925c00;
+      border: 1px solid #fce3b8;
+    }
+
+    .endpoint-desc {
+      font-size: 14px;
+      color: var(--docs-muted);
+      line-height: 1.45;
+      margin-bottom: 16px;
+    }
+
+    /* CODE BOXES */
+    .code-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--docs-muted);
+      margin: 14px 0 6px;
+    }
+
+    .code-box {
+      background: var(--code-bg);
+      color: var(--code-text);
+      font-family: monospace;
+      font-size: 12.5px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      overflow-x: auto;
+      line-height: 1.45;
+      white-space: pre;
+    }
+
+    /* TRY IT OUT */
+    .try-box {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--docs-border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .try-btn {
+      align-self: flex-start;
+      background: #1c1d1f;
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .try-btn:hover {
+      background: #000;
+    }
+
+    .try-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .try-result {
+      display: none;
+      background: #0d1117;
+      color: #7ee787;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      max-height: 250px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    @media (max-width: 900px) {
+      .docs-layout { flex-direction: column; }
+      .docs-sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--docs-border); }
+      .docs-content { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="docs-header">
+    <div class="docs-header-left">
+      <a href="/" class="docs-logo">MODUL.HAUS</a>
+      <span class="docs-badge">REST API Reference v1.0</span>
+    </div>
+    <div class="docs-header-right">
+      <a href="/">На сайт</a>
+      <a href="/houses.html">Конструктор</a>
+      <a href="/profile.html">Кабинет</a>
+      <a href="/architecture">Карта Archify</a>
+      <a href="/admin.html">Админка</a>
+    </div>
+  </header>
+
+  <div class="docs-layout">
+    <!-- SIDEBAR -->
+    <aside class="docs-sidebar">
+      <div class="sidebar-group-title">1. Каталог и серии</div>
+      <a href="#get-catalog-series" class="sidebar-link"><span class="method-tag get">GET</span> /api/catalog/series</a>
+      <a href="#get-catalog-presets" class="sidebar-link"><span class="method-tag get">GET</span> /api/catalog/presets</a>
+
+      <div class="sidebar-group-title">2. Конфигуратор</div>
+      <a href="#get-config-options" class="sidebar-link"><span class="method-tag get">GET</span> .../:slug/options</a>
+      <a href="#get-config-photos" class="sidebar-link"><span class="method-tag get">GET</span> .../:slug/photos</a>
+
+      <div class="sidebar-group-title">3. Авторизация и профиль</div>
+      <a href="#post-auth-push" class="sidebar-link"><span class="method-tag post">POST</span> /api/auth/send-push-code</a>
+      <a href="#post-auth-register" class="sidebar-link"><span class="method-tag post">POST</span> /api/auth/register-phone</a>
+      <a href="#post-auth-login" class="sidebar-link"><span class="method-tag post">POST</span> /api/auth/login</a>
+      <a href="#get-auth-orders" class="sidebar-link"><span class="method-tag get">GET</span> /api/auth/my-orders</a>
+
+      <div class="sidebar-group-title">4. Заказы и платежи</div>
+      <a href="#post-orders" class="sidebar-link"><span class="method-tag post">POST</span> /api/orders</a>
+      <a href="#post-orders-pay" class="sidebar-link"><span class="method-tag post">POST</span> /api/orders/:id/pay</a>
+      <a href="#post-orders-confirm" class="sidebar-link"><span class="method-tag post">POST</span> /api/orders/:id/confirm</a>
+      <a href="#post-orders-webhook" class="sidebar-link"><span class="method-tag post">POST</span> .../webhook/yookassa</a>
+
+      <div class="sidebar-group-title">5. Лиды и заявки</div>
+      <a href="#post-leads" class="sidebar-link"><span class="method-tag post">POST</span> /api/leads</a>
+
+      <div class="sidebar-group-title">6. Администрирование</div>
+      <a href="#get-admin-orders" class="sidebar-link"><span class="method-tag get">GET</span> /api/admin/orders</a>
+      <a href="#patch-order-status" class="sidebar-link"><span class="method-tag patch">PATCH</span> /api/orders/:id/status</a>
+      <a href="#get-admin-outbox" class="sidebar-link"><span class="method-tag get">GET</span> /api/admin/outbox</a>
+      <a href="#post-test-mail" class="sidebar-link"><span class="method-tag post">POST</span> .../settings/test-mail</a>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="docs-content">
+      <div class="docs-intro">
+        <h1>Спецификация REST API</h1>
+        <p>Полное описание эндпоинтов серверной части интернет-магазина MODUL.HAUS. Базовый URL: <code>http://localhost:3030</code>. Все ответы возвращаются в формате JSON UTF-8.</p>
+      </div>
+
+      <!-- 1. CATALOG -->
+      <section>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 32px 0 16px;">1. Каталог и серии</h2>
+
+        <!-- GET /api/catalog/series -->
+        <div class="endpoint-card" id="get-catalog-series">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/catalog/series</span>
+          </div>
+          <div class="endpoint-desc">Возвращает полный список доступных линеек домов и бань с начальными ценами и категориями.</div>
+          <div class="code-label">Пример ответа (200 OK):</div>
+          <div class="code-box">[
+  {
+    "id": 1,
+    "slug": "altai",
+    "name": "Алтай",
+    "category": "houses",
+    "starting_price": 3868000,
+    "min_area": 70.5
+  }
+]</div>
+          <div class="try-box">
+            <button class="try-btn" onclick="testEndpoint('/api/catalog/series', 'GET', null, this)">Выполнить тест (Try)</button>
+            <div class="try-result"></div>
+          </div>
+        </div>
+
+        <!-- GET /api/catalog/presets -->
+        <div class="endpoint-card" id="get-catalog-presets">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/catalog/presets</span>
+          </div>
+          <div class="endpoint-desc">Список популярных готовых карточек проектов для витрины главной страницы.</div>
+          <div class="try-box">
+            <button class="try-btn" onclick="testEndpoint('/api/catalog/presets', 'GET', null, this)">Выполнить тест (Try)</button>
+            <div class="try-result"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. CONFIGURATOR -->
+      <section>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 32px 0 16px;">2. Конфигуратор и каскадный подбор</h2>
+
+        <!-- GET /api/configurator/:seriesSlug/options -->
+        <div class="endpoint-card" id="get-config-options">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/configurator/:seriesSlug/options</span>
+          </div>
+          <div class="endpoint-desc">Загрузка параметров серии (габариты, доступные пристройки, цвета) для отрисовки селекторов конфигуратора.</div>
+          <div class="try-box">
+            <button class="try-btn" onclick="testEndpoint('/api/configurator/altai/options', 'GET', null, this)">Выполнить тест для «Алтай» (Try)</button>
+            <div class="try-result"></div>
+          </div>
+        </div>
+
+        <!-- GET /api/configurator/:seriesSlug/photos -->
+        <div class="endpoint-card" id="get-config-photos">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/configurator/:seriesSlug/photos</span>
+          </div>
+          <div class="endpoint-desc">Каскадный подбор фотографий по выбранным фильтрам: размер, цвет, терраса/крыльцо с фолбеком на базовый экстерьер и планировку.</div>
+          <div class="code-label">Query параметры:</div>
+          <div class="code-box">configKey: "9x9.5"
+color: "bronze"
+entrance: "terrace"
+terraceType: "covered"</div>
+          <div class="try-box">
+            <button class="try-btn" onclick="testEndpoint('/api/configurator/altai/photos?configKey=9x9.5&color=bronze', 'GET', null, this)">Выполнить тест (Try)</button>
+            <div class="try-result"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. AUTH -->
+      <section>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 32px 0 16px;">3. Авторизация и профиль клиента</h2>
+
+        <!-- POST /api/auth/send-push-code -->
+        <div class="endpoint-card" id="post-auth-push">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/auth/send-push-code</span>
+          </div>
+          <div class="endpoint-desc">Генерация 4-значного кода подтверждения для регистрации/входа по номеру телефона РФ. Сессия живет 5 минут.</div>
+          <div class="code-label">Тело запроса (JSON):</div>
+          <div class="code-box">{
+  "phone": "+7 (999) 123-45-67",
+  "name": "Алексей Иванов",
+  "password": "secretPassword123",
+  "passwordConfirm": "secretPassword123"
+}</div>
+        </div>
+
+        <!-- POST /api/auth/register-phone -->
+        <div class="endpoint-card" id="post-auth-register">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/auth/register-phone</span>
+          </div>
+          <div class="endpoint-desc">Проверка 4-значного Push-кода, создание пользователя в базе данных и выдача JWT-токена на 30 дней.</div>
+        </div>
+
+        <!-- POST /api/auth/login -->
+        <div class="endpoint-card" id="post-auth-login">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/auth/login</span>
+          </div>
+          <div class="endpoint-desc">Вход по связке email/телефон + пароль. Возвращает JWT токен.</div>
+          <div class="try-box">
+            <button class="try-btn" onclick="testEndpoint('/api/auth/login', 'POST', { identifier: 'admin@modul-haus.ru', password: 'admin123' }, this)">Тест входа админа (Try)</button>
+            <div class="try-result"></div>
+          </div>
+        </div>
+
+        <!-- GET /api/auth/my-orders -->
+        <div class="endpoint-card" id="get-auth-orders">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/auth/my-orders</span>
+            <span class="endpoint-auth-badge">Требуется JWT токен</span>
+          </div>
+          <div class="endpoint-desc">Возвращает список всех заказов текущего авторизованного пользователя с деталями комплектации и статусом производства.</div>
+        </div>
+      </section>
+
+      <!-- 4. ORDERS & PAYMENT -->
+      <section>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 32px 0 16px;">4. Заказы и платежный шлюз</h2>
+
+        <!-- POST /api/orders -->
+        <div class="endpoint-card" id="post-orders">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/orders</span>
+          </div>
+          <div class="endpoint-desc">Создание нового заказа из корзины с присвоением номера <code>DK-ГГГГММДД-ХХХХ</code> и отправкой email-уведомления менеджеру.</div>
+        </div>
+
+        <!-- POST /api/orders/:id/pay -->
+        <div class="endpoint-card" id="post-orders-pay">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/orders/:id/pay</span>
+          </div>
+          <div class="endpoint-desc">Инициализация платежа через официальный API ЮKassa или запуск локального интерактивного тестового шлюза (Sandbox).</div>
+        </div>
+
+        <!-- POST /api/orders/:id/confirm-payment -->
+        <div class="endpoint-card" id="post-orders-confirm">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/orders/:id/confirm-payment</span>
+          </div>
+          <div class="endpoint-desc">Фиксация факта успешной оплаты и автоматический перевод статуса заказа в <code>PAID</code>.</div>
+        </div>
+
+        <!-- POST /api/orders/webhook/yookassa -->
+        <div class="endpoint-card" id="post-orders-webhook">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/orders/webhook/yookassa</span>
+          </div>
+          <div class="endpoint-desc">Официальный вебхук ЮKassa для асинхронного подтверждения платежей сервером эквайринга. Возвращает 200 OK.</div>
+        </div>
+      </section>
+
+      <!-- 5. LEADS -->
+      <section>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 32px 0 16px;">5. Лиды и заявки</h2>
+
+        <!-- POST /api/leads -->
+        <div class="endpoint-card" id="post-leads">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/leads</span>
+          </div>
+          <div class="endpoint-desc">Отправка заявки на обратный звонок или расчет сметы с валидацией российского номера телефона.</div>
+        </div>
+      </section>
+
+      <!-- 6. ADMIN -->
+      <section>
+        <h2 style="font-size: 20px; font-weight: 800; margin: 32px 0 16px;">6. Панель администратора</h2>
+
+        <!-- GET /api/admin/orders -->
+        <div class="endpoint-card" id="get-admin-orders">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/admin/orders</span>
+            <span class="endpoint-auth-badge">Требуется JWT Admin</span>
+          </div>
+          <div class="endpoint-desc">Полный список всех заказов магазина со всеми позициями и контактами клиентов.</div>
+        </div>
+
+        <!-- PATCH /api/orders/:id/status -->
+        <div class="endpoint-card" id="patch-order-status">
+          <div class="endpoint-header">
+            <span class="method-tag patch">PATCH</span>
+            <span class="endpoint-url">/api/orders/:id/status</span>
+            <span class="endpoint-auth-badge">Требуется JWT Admin</span>
+          </div>
+          <div class="endpoint-desc">Смена этапа производства заказа: <code>NEW</code> &rarr; <code>PAID</code> &rarr; <code>IN_PRODUCTION</code> &rarr; <code>DELIVERING</code> &rarr; <code>COMPLETED</code>.</div>
+        </div>
+
+        <!-- GET /api/admin/outbox -->
+        <div class="endpoint-card" id="get-admin-outbox">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/admin/outbox</span>
+            <span class="endpoint-auth-badge">Требуется JWT Admin</span>
+          </div>
+          <div class="endpoint-desc">Журнал всех отправленных почтовых уведомлений (FormSubmit / SMTP) со статусами доставки.</div>
+        </div>
+
+        <!-- POST /api/admin/settings/test-mail -->
+        <div class="endpoint-card" id="post-test-mail">
+          <div class="endpoint-header">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url">/api/admin/settings/test-mail</span>
+            <span class="endpoint-auth-badge">Требуется JWT Admin</span>
+          </div>
+          <div class="endpoint-desc">Проверка подключения к SMTP серверу (Mail.ru, Yandex) и отправка проверочного тестового письма.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    async function testEndpoint(url, method = 'GET', body = null, btnEl = null) {
+      const card = btnEl ? btnEl.closest('.endpoint-card') : null;
+      const resultBox = card ? card.querySelector('.try-result') : null;
+
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.textContent = 'Загрузка...';
+      }
+
+      if (resultBox) {
+        resultBox.style.display = 'block';
+        resultBox.textContent = 'Отправка HTTP ' + method + ' ' + url + '...';
+      }
+
+      try {
+        const token = localStorage.getItem('admin_token') || localStorage.getItem('user_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const options = { method, headers };
+        if (body) options.body = JSON.stringify(body);
+
+        const startTime = performance.now();
+        const res = await fetch(url, options);
+        const elapsed = Math.round(performance.now() - startTime);
+        const data = await res.json();
+
+        if (resultBox) {
+          resultBox.textContent = `HTTP ${res.status} ${res.statusText} (${elapsed} ms)\n\n` + JSON.stringify(data, null, 2);
+          resultBox.style.color = res.ok ? '#7ee787' : '#ff7b72';
+        }
+      } catch (err) {
+        if (resultBox) {
+          resultBox.textContent = 'Ошибка выполнения запроса: ' + err.message;
+          resultBox.style.color = '#ff7b72';
+        }
+      } finally {
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.textContent = 'Выполнить тест (Try)';
+        }
+      }
+    }
+  </script>
+</body>
+</html>

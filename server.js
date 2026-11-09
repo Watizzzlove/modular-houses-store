@@ -94,6 +94,11 @@ app.get(['/admin', '/admin.html'], (req, res) => {
   res.sendFile(path.join(pagesDir, 'admin.html'));
 });
 
+// Интерактивная документация REST API
+app.get(['/api-docs', '/api-docs.html', '/docs/api'], (req, res) => {
+  res.sendFile(path.join(pagesDir, 'api-docs.html'));
+});
+
 // Интерактивная архитектурная карта проекта Archify
 app.get(['/architecture', '/architecture.html', '/archify-map'], (req, res) => {
   const mapPath = path.join(__dirname, 'docs', 'archify', 'system-architecture.html');

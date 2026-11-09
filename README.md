@@ -107,6 +107,7 @@ docker compose up --build
 - Платежный шлюз: **http://localhost:3030/payment.html**
 - Панель администратора: **http://localhost:3030/admin.html** (логин `admin@doka.local` или `admin@modul-haus.ru`, пароль `admin123`)
 - Карта архитектуры (Archify): **http://localhost:3030/architecture**
+- Интерактивная документация REST API: **http://localhost:3030/api-docs**
 
 ---
 
