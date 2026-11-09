@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Клиентский JS/CSS — Декомпозиция компонентов фронтенда",
+    "subtitle": "Архитектура браузерной логики: конфигуратор, хранилище корзины, гейткипер сделки и админка",
+    "output": "docs/archify/sub-frontend.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    {
+      "id": "styles_main",
+      "type": "frontend",
+      "label": "Стили Сайта",
+      "sublabel": "public/css/style.css",
+      "icon": "frontend",
+      "tag": "CSS-переменные, сетка, UI",
+      "pos": [40, 120],
+      "size": [160, 60]
+    },
+    {
+      "id": "app_core",
+      "type": "frontend",
+      "label": "Базовый Скрипт",
+      "sublabel": "public/js/app.js",
+      "icon": "frontend",
+      "tag": "Шапка, мобильное меню, тосты",
+      "pos": [40, 260],
+      "size": [160, 64]
+    },
+    {
+      "id": "styles_admin",
+      "type": "frontend",
+      "label": "Стили Админки",
+      "sublabel": "public/css/admin.css",
+      "icon": "frontend",
+      "tag": "Таблицы, фильтры, карточки",
+      "pos": [40, 400],
+      "size": [160, 60]
+    },
+    {
+      "id": "configurator_state",
+      "type": "frontend",
+      "label": "State Machine Конфигуратора",
+      "sublabel": "public/js/configurator.js",
+      "icon": "frontend",
+      "tag": "Серия, цвет, размер, терраса",
+      "pos": [270, 100],
+      "size": [180, 64]
+    },
+    {
+      "id": "configurator_gallery",
+      "type": "frontend",
+      "label": "Галерея и Слайдер",
+      "sublabel": "configurator.js (DOM View)",
+      "icon": "frontend",
+      "tag": "Слайды экстерьера, зум, чертеж",
+      "pos": [270, 250],
+      "size": [180, 64]
+    },
+    {
+      "id": "configurator_pricing",
+      "type": "backend",
+      "label": "Калькулятор Сметы",
+      "sublabel": "configurator.js (Pricing)",
+      "icon": "backend",
+      "tag": "Базовая цена + размер + пристрой",
+      "pos": [270, 400],
+      "size": [180, 64]
+    },
+    {
+      "id": "cart_store",
+      "type": "database",
+      "label": "Хранилище Корзины",
+      "sublabel": "localStorage 'doka_cart'",
+      "icon": "database",
+      "tag": "Синхронизация между вкладками",
+      "pos": [520, 100],
+      "size": [180, 64]
+    },
+    {
+      "id": "cart_drawer",
+      "type": "frontend",
+      "label": "Шторка Корзины (Drawer)",
+      "sublabel": "public/js/cart.js",
+      "icon": "frontend",
+      "tag": "Список, количество, общая сумма",
+      "pos": [520, 250],
+      "size": [180, 64]
+    },
+    {
+      "id": "cart_gatekeeper",
+      "type": "security",
+      "label": "Гейткипер Авторизации",
+      "sublabel": "cart.js (Auth Modal)",
+      "icon": "security",
+      "tag": "Проверка JWT, push-код",
+      "pos": [520, 400],
+      "size": [180, 64]
+    },
+    {
+      "id": "checkout_modal",
+      "type": "frontend",
+      "label": "Модалка Чекаута",
+      "sublabel": "cart.js (Checkout Modal)",
+      "icon": "frontend",
+      "tag": "Контакты, адрес, отправка",
+      "pos": [770, 250],
+      "size": [180, 64]
+    },
+    {
+      "id": "admin_client",
+      "type": "frontend",
+      "label": "Клиент Панели Админа",
+      "sublabel": "public/js/admin.js",
+      "icon": "frontend",
+      "tag": "Каталог, фото, CMS, заказы",
+      "pos": [770, 400],
+      "size": [180, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Слой Базовых Ресурсов",
+      "wraps": ["styles_main", "app_core", "styles_admin"]
+    },
+    {
+      "kind": "region",
+      "label": "Модуль Интерактивного Конфигуратора",
+      "wraps": ["configurator_state", "configurator_gallery", "configurator_pricing"]
+    },
+    {
+      "kind": "region",
+      "label": "Модуль Корзины и Продаж",
+      "wraps": ["cart_store", "cart_drawer", "cart_gatekeeper", "checkout_modal"]
+    },
+    {
+      "kind": "region",
+      "label": "Модуль Управления (Админка)",
+      "wraps": ["admin_client"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "app_to_styles",
+      "from": "app_core",
+      "to": "styles_main",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "state_to_gallery",
+      "from": "configurator_state",
+      "to": "configurator_gallery",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "state_to_pricing",
+      "from": "configurator_state",
+      "to": "configurator_pricing",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "pricing_to_cart",
+      "from": "configurator_pricing",
+      "to": "cart_store",
+      "label": "addItem"
+    },
+    {
+      "id": "store_to_drawer",
+      "from": "cart_store",
+      "to": "cart_drawer",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "drawer_to_gatekeeper",
+      "from": "cart_drawer",
+      "to": "cart_gatekeeper",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gatekeeper_to_checkout",
+      "from": "cart_gatekeeper",
+      "to": "checkout_modal",
+      "label": "Автопереход"
+    },
+    {
+      "id": "admin_to_styles",
+      "from": "admin_client",
+      "to": "styles_admin"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Изолированное состояние и хранение",
+      "items": [
+        "Конфигуратор хранит состояние текущего проекта в памяти замыкания Configurator",
+        "Корзина сохраняется в localStorage браузера, благодаря чему покупки не сбрасываются при переходах",
+        "Количество товаров и бейджи в шапке автоматически обновляются через единую функцию updateBadges()"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Гейткипер оформления сделки",
+      "items": [
+        "При клике на оформление заказа cart.js проверяет токен авторизации",
+        "Если пользователь не вошел, появляется модалка с подтверждением номера через push-код",
+        "После успешной верификации модалка автоматически открывает чекаут с подставленными данными"
+      ]
+    }
+  ]
+}

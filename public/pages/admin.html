@@ -13,18 +13,30 @@
   <div class="admin-auth-overlay" data-admin-auth-overlay>
     <!-- LOGIN BOX -->
     <div class="auth-card" data-auth-login-box>
-      <h2>Вход в панель админа</h2>
-      <p>Введите учетные данные для управления сайтом</p>
+      <h2>Вход в панель управления</h2>
+      <p>Закрытый раздел для управления каталогом, медиафайлами и заказами</p>
+
+      <!-- TEST CREDENTIALS CALLOUT -->
+      <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 12px 16px; margin: 0 0 20px; font-size: 13px; text-align: left; color: #92400e;">
+        <div style="font-weight: 800; margin-bottom: 4px; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+          <span>🔑 Тестовый доступ:</span>
+        </div>
+        <div>Логин: <strong style="color: #111; user-select: all;">admin@modul-haus.ru</strong></div>
+        <div>Пароль: <strong style="color: #111; user-select: all;">admin123</strong></div>
+      </div>
+
       <form data-login-form>
         <div class="form-group">
-          <label>Email</label>
-          <input type="email" name="email" class="form-input" value="admin@doka.local" required>
+          <label>Email администратора</label>
+          <input type="email" name="email" class="form-input" value="admin@modul-haus.ru" required>
         </div>
         <div class="form-group">
           <label>Пароль</label>
           <input type="password" name="password" class="form-input" value="admin123" required>
         </div>
-        <button type="submit" class="btn-admin" style="margin-top: 10px;">Войти</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px; font-size: 15px;">
+          Войти в систему
+        </button>
       </form>
       <div class="auth-toggle-link">
         Нет аккаунта? <a data-switch-to-reg>Зарегистрироваться</a>
@@ -136,45 +148,90 @@
           <div class="admin-card-head">
             <h3>Загрузка новой фотографии</h3>
           </div>
-          <form data-upload-media-form style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap: 14px; align-items: end;">
-            <div class="form-group" style="margin-bottom: 0;">
+          <form data-upload-media-form style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0; min-width: 180px; flex: 1;">
               <label>Серия</label>
-              <select name="seriesId" class="form-input" data-upload-series-select required></select>
+              <select name="seriesId" class="form-input form-input-sm" data-upload-series-select required></select>
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 0; min-width: 140px; flex: 1;">
               <label>Цвет фасада</label>
-              <select name="color" class="form-input">
+              <select name="color" class="form-input form-input-sm">
                 <option value="bronze">Бронза</option>
                 <option value="beige">Бежевый</option>
                 <option value="graphite">Графит</option>
               </select>
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 0; min-width: 160px; flex: 1;">
               <label>Ракурс / Тип</label>
-              <select name="kind" class="form-input">
+              <select name="kind" class="form-input form-input-sm">
                 <option value="exterior">Вид снаружи (фасад)</option>
                 <option value="plan">Планировка (чертеж)</option>
                 <option value="interior">Интерьер</option>
               </select>
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 0; min-width: 200px; flex: 2;">
               <label>Файл фото (JPG, PNG, WEBP)</label>
-              <input type="file" name="photo" class="form-input" accept="image/*" required>
+              <input type="file" name="photo" class="form-input form-input-sm" accept="image/*" required>
             </div>
-            <button type="submit" class="btn btn-primary" style="height: 42px; font-size: 14px;">
+            <button type="submit" class="btn btn-primary btn-sm" style="height: 38px;">
               Загрузить в галерею
             </button>
           </form>
         </div>
 
         <div class="admin-card">
-          <div class="admin-card-head">
-            <h3>Галерея загруженных фото</h3>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <label style="font-size: 13px; font-weight: 700;">Фильтр по серии:</label>
-              <select class="form-input" style="width: 200px;" data-media-series-select></select>
+          <div class="admin-card-head" style="margin-bottom: 12px;">
+            <h3>Галерея фотографий</h3>
+          </div>
+
+          <!-- COMPACT RESPONSIVE FILTER WIDGET (CLEAN GRID, NO BROKEN LABELS) -->
+          <div class="admin-media-filters-widget">
+            <div class="admin-media-filters-grid">
+              <div class="admin-filter-field">
+                <label for="mediaCatSelect">Категория</label>
+                <select id="mediaCatSelect" class="form-input form-input-sm" data-media-cat-select>
+                  <option value="all">Все категории</option>
+                  <option value="1">Модульные дома</option>
+                  <option value="2">Модульные бани</option>
+                </select>
+              </div>
+
+              <div class="admin-filter-field">
+                <label for="mediaSeriesSelect">Серия</label>
+                <select id="mediaSeriesSelect" class="form-input form-input-sm" data-media-series-select>
+                  <option value="all">Все серии</option>
+                </select>
+              </div>
+
+              <div class="admin-filter-field">
+                <label for="mediaColorSelect">Цвет фасада</label>
+                <select id="mediaColorSelect" class="form-input form-input-sm" data-media-color-select>
+                  <option value="all">Все цвета</option>
+                  <option value="bronze">Бронза</option>
+                  <option value="beige">Бежевый</option>
+                  <option value="graphite">Графит</option>
+                </select>
+              </div>
+
+              <div class="admin-filter-field">
+                <label for="mediaKindSelect">Ракурс</label>
+                <select id="mediaKindSelect" class="form-input form-input-sm" data-media-kind-select>
+                  <option value="all">Все ракурсы</option>
+                  <option value="exterior">Фасад (exterior)</option>
+                  <option value="plan">Планировка (plan)</option>
+                  <option value="interior">Интерьер (interior)</option>
+                </select>
+              </div>
+
+              <div class="admin-filter-actions">
+                <span class="admin-media-count-badge" data-media-count-badge>Фото: 0</span>
+                <button type="button" class="btn btn-secondary btn-sm" data-media-reset-btn title="Сбросить все фильтры">
+                  Сбросить
+                </button>
+              </div>
             </div>
           </div>
+
           <div class="admin-media-grid" data-admin-media-grid>
             <!-- Filled via admin.js -->
           </div>
@@ -219,8 +276,9 @@
                 <tr>
                   <th class="nowrap">Дата и время</th>
                   <th class="nowrap">Тип</th>
+                  <th class="nowrap">Статус доставки</th>
                   <th class="nowrap">Получатель</th>
-                  <th>Тема письма</th>
+                  <th>Тема и детали</th>
                   <th class="nowrap">Контакты клиента</th>
                 </tr>
               </thead>
@@ -270,17 +328,20 @@
         </div>
       </section>
 
-      <!-- TAB 5: SETTINGS & YOOKASSA -->
+      <!-- TAB 5: SETTINGS & PAYMENTS -->
       <section data-tab-content="settings" style="display: none;">
         <div class="admin-card" style="max-width: 680px;">
           <div class="admin-card-head">
-            <h3>Интеграция с платежным шлюзом (ЮKassa)</h3>
+            <h3>Параметры платежных шлюзов и Push-уведомлений</h3>
           </div>
           <p style="font-size: 14px; color: var(--admin-muted); margin-bottom: 20px;">
-            Вы можете указать реальные тестовые ключи из личного кабинета ЮKassa для проверки настоящей тестовой оплаты с редиректом. Если ключи не указаны, сайт использует встроенный тестовый шлюз (0 ₽).
+            Укажите реальные тестовые ключи ЮKassa или Stripe для проведения настоящих тестовых транзакций без списания средств (0 ₽). Также здесь настраивается шлюз для отправки push/SMS верификации.
           </p>
 
           <form data-admin-settings-form style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="border-bottom: 1px solid var(--admin-line); padding-bottom: 12px; margin-bottom: 4px;">
+              <strong style="font-size: 14px; color: #111;">ЮKassa (Тестовый магазин)</strong>
+            </div>
             <div class="form-group">
               <label>Идентификатор магазина (Shop ID)</label>
               <input type="text" name="yookassa_shop_id" class="form-input" placeholder="Например: 123456">
@@ -290,13 +351,75 @@
               <input type="password" name="yookassa_secret_key" class="form-input" placeholder="test_••••••••••••••••••••••••">
             </div>
             <div class="form-group">
-              <label>Тестовый режим</label>
+              <label>Тестовый режим ЮKassa</label>
               <select name="yookassa_test_mode" class="form-input">
                 <option value="true">Включен (Тестовые транзакции)</option>
                 <option value="false">Боевой режим</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 220px;">
+
+            <div style="border-bottom: 1px solid var(--admin-line); padding-bottom: 12px; margin-top: 10px; margin-bottom: 4px;">
+              <strong style="font-size: 14px; color: #111;">Stripe Checkout (0 ₽ / Тестовый режим)</strong>
+            </div>
+            <div class="form-group">
+              <label>Stripe Secret Key (sk_test_...)</label>
+              <input type="password" name="stripe_secret_key" class="form-input" placeholder="sk_test_••••••••••••••••••••••••">
+            </div>
+
+            <div style="border-bottom: 1px solid var(--admin-line); padding-bottom: 12px; margin-top: 10px; margin-bottom: 4px;">
+              <strong style="font-size: 14px; color: #111;">Почтовые уведомления о заявках и заказах (SMTP)</strong>
+            </div>
+            <div class="form-group">
+              <label>Сервис отправки писем</label>
+              <select name="mail_service" class="form-input" id="adminMailService">
+                <option value="smtp">Прямой SMTP сервер (Mail.ru, Yandex, Gmail) — Без посредников</option>
+                <option value="formsubmit">FormSubmit Relay (Внешний сервис, требует активации)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Email для получения заявок с сайта</label>
+              <input type="email" name="admin_notify_email" class="form-input" value="watislove@internet.ru" placeholder="watislove@internet.ru" required>
+              <small style="color: #6a6864; font-size: 12px; display: block; margin-top: 4px;">На этот адрес будут приходить все новые заявки на консультацию и оформленные заказы</small>
+            </div>
+            <div class="form-group">
+              <label>SMTP Сервер (Хост)</label>
+              <input type="text" name="smtp_host" class="form-input" value="smtp.mail.ru" placeholder="smtp.mail.ru">
+            </div>
+            <div class="form-group">
+              <label>SMTP Порт</label>
+              <input type="number" name="smtp_port" class="form-input" value="465" placeholder="465">
+            </div>
+            <div class="form-group">
+              <label>Логин SMTP (обычно ваш email)</label>
+              <input type="text" name="smtp_user" class="form-input" value="watislove@internet.ru" placeholder="watislove@internet.ru">
+            </div>
+            <div class="form-group">
+              <label>Пароль для внешних приложений Mail.ru</label>
+              <input type="password" name="smtp_pass" class="form-input" placeholder="16 латинских букв (например: abcd efgh ijkl mnop)">
+              <small style="color: #6a6864; font-size: 12px; display: block; margin-top: 4px;">
+                <strong>Важно для Mail.ru:</strong> используйте специальный пароль из 16 букв (создается в <em>account.mail.ru &rarr; Безопасность &rarr; Пароли для внешних приложений</em>). Обычный пароль от почты не подойдет.
+              </small>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center; margin-top: 10px; flex-wrap: wrap;">
+              <button type="submit" class="btn btn-primary" style="width: 220px;">
+                Сохранить параметры
+              </button>
+              <button type="button" class="btn btn-secondary" id="btnAdminTestMail" style="padding: 10px 18px; font-size: 13px;">
+                Проверить SMTP и отправить тест
+              </button>
+            </div>
+            <div id="adminMailTestMsg" style="margin-top: 10px; font-size: 13px; line-height: 1.5; display: none; padding: 10px 14px; border-radius: 6px;"></div>
+
+            <div style="border-bottom: 1px solid var(--admin-line); padding-bottom: 12px; margin-top: 16px; margin-bottom: 4px;">
+              <strong style="font-size: 14px; color: #111;">Push / SMS шлюз (SMS.ru / Firebase)</strong>
+            </div>
+            <div class="form-group">
+              <label>SMS.ru API ключ</label>
+              <input type="password" name="sms_api_key" class="form-input" placeholder="Ключ авторизации SMS-шлюза">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 220px; margin-top: 10px;">
               Сохранить параметры
             </button>
           </form>
@@ -307,10 +430,10 @@
 
   <!-- MODAL: CONFIGURATIONS & PRICES -->
   <div class="admin-auth-overlay" data-configs-modal style="display: none;">
-    <div class="auth-card" style="width: min(720px, 100%);">
+    <div class="auth-card" style="width: min(720px, 100%); position: relative;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
         <h3 data-configs-series-name style="font-size: 20px; font-weight: 800;">Размеры и цены</h3>
-        <button type="button" data-close-configs-modal style="background:none; border:none; font-size: 20px; cursor:pointer;">✕</button>
+        <button type="button" class="admin-circle-close-btn" data-close-configs-modal title="Закрыть">✕</button>
       </div>
 
       <table class="admin-table" style="margin-bottom: 24px;">

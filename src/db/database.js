@@ -1,12 +1,18 @@
+// Модуль подключения и схемы базы данных SQLite (better-sqlite3).
+// Создает локальный файл data/store.db, включает режим WAL для быстрого параллельного чтения
+// и накатывает таблицы для пользователей, каталога серий, комплектаций, медиа-файлов и заказов.
+
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
+// Проверяем наличие папки для базы данных
 const dataDir = path.join(__dirname, '../../data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
+// Папка для загружаемых файлов через админку
 const uploadsDir = path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -15,12 +21,14 @@ if (!fs.existsSync(uploadsDir)) {
 const dbPath = path.join(dataDir, 'store.db');
 const db = new Database(dbPath);
 
-// Enable WAL mode for concurrency and foreign keys
+// Включаем WAL (Write-Ahead Logging) для быстрой работы без блокировок и проверку внешних ключей
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+// Первичная инициализация схемы таблиц
 function initSchema() {
   db.exec(`
+    -- Таблица пользователей (админы и клиенты личного кабинета)
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       email TEXT UNIQUE NOT NULL,
@@ -29,6 +37,7 @@ function initSchema() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- Категории товаров (дома, бани)
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -36,6 +45,7 @@ function initSchema() {
       sort_order INTEGER DEFAULT 0
     );
 
+    -- Серии проектов (Алтай, Таганай, Тайга, Аркаим и т.д.)
     CREATE TABLE IF NOT EXISTS series (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       category_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
@@ -49,6 +59,7 @@ function initSchema() {
       sort_order INTEGER DEFAULT 0
     );
 
+    -- Размеры и базовые конфигурации серии (например, 9x9.5)
     CREATE TABLE IF NOT EXISTS configurations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       series_id INTEGER REFERENCES series(id) ON DELETE CASCADE,
@@ -62,6 +73,7 @@ function initSchema() {
       sort_order INTEGER DEFAULT 0
     );
 
+    -- Опции пристроек (крыльцо, открытая или закрытая терраса)
     CREATE TABLE IF NOT EXISTS extensions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       configuration_id INTEGER REFERENCES configurations(id) ON DELETE CASCADE,
@@ -75,6 +87,7 @@ function initSchema() {
       area REAL DEFAULT 0
     );
 
+    -- Индекс реальных фотографий проекта с привязкой к цвету, ракурсу и пристрою
     CREATE TABLE IF NOT EXISTS media_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       series_id INTEGER REFERENCES series(id) ON DELETE CASCADE,
@@ -89,6 +102,7 @@ function initSchema() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- Готовые популярные сборки для витрины каталога
     CREATE TABLE IF NOT EXISTS popular_presets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       badge TEXT,
@@ -107,16 +121,19 @@ function initSchema() {
       sort_order INTEGER DEFAULT 0
     );
 
+    -- Текстовые блоки и контент страниц, редактируемые через админку
     CREATE TABLE IF NOT EXISTS site_content (
       key TEXT PRIMARY KEY,
       value TEXT
     );
 
+    -- Системные настройки (почта админа, шлюз оплаты, смс провайдер)
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
     );
 
+    -- Заказы клиентов и заявки на расчет
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       order_number TEXT UNIQUE NOT NULL,
@@ -136,7 +153,7 @@ function initSchema() {
     );
   `);
 
-  // Safe migrations for added fields
+  // Безопасное добавление полей (миграции на лету, если база уже существовала)
   const userColumns = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
   if (!userColumns.includes('phone')) db.exec("ALTER TABLE users ADD COLUMN phone TEXT");
   if (!userColumns.includes('name')) db.exec("ALTER TABLE users ADD COLUMN name TEXT");

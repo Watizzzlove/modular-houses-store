@@ -107,10 +107,11 @@ button, .btn {
   box-shadow: 0 0 0 3px rgba(245, 162, 10, 0.15);
 }
 .form-input-sm {
-  padding: 4px 8px;
-  font-size: 12px;
-  border-radius: 6px;
-  height: 30px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  height: 36px;
+  line-height: 1.4;
 }
 
 /* Admin Auth Overlay */
@@ -341,6 +342,114 @@ button, .btn {
   color: #03543f;
 }
 
+/* Media Filters Widget (Solid, structured grid where labels never jump) */
+.admin-media-filters-widget {
+  background: #faf9f6;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  transition: all 0.2s ease;
+}
+
+.admin-media-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) auto;
+  gap: 12px 14px;
+  align-items: flex-end;
+}
+
+@media (max-width: 1100px) {
+  .admin-media-filters-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .admin-filter-actions {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px dashed var(--admin-line);
+    margin-top: 4px;
+  }
+}
+
+.admin-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-filter-field label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6a6864;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-filter-field select {
+  width: 100%;
+  height: 36px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid var(--admin-line);
+}
+
+.admin-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 2px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.admin-media-count-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #666;
+  background: #eeede8;
+  padding: 6px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* Perfect Circular Close Button */
+.admin-circle-close-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  border-radius: 50% !important;
+  background: #f0eee8 !important;
+  border: 1px solid var(--admin-line) !important;
+  color: #444 !important;
+  cursor: pointer;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  transition: all 0.2s ease;
+  box-sizing: border-box !important;
+}
+
+.admin-circle-close-btn:hover {
+  background: #e2e0d8 !important;
+  color: #000 !important;
+  transform: rotate(90deg);
+}
+
 /* Media Grid */
 .admin-media-grid {
   display: grid;
@@ -369,24 +478,121 @@ button, .btn {
   color: #555;
   line-height: 1.35;
 }
+
+/* Circular Delete Button on Media Card */
 .admin-media-delete-btn {
   position: absolute;
   top: 6px;
   right: 6px;
-  background: rgba(229, 62, 62, 0.9);
-  color: #fff;
+  background: rgba(220, 38, 38, 0.92);
+  color: #ffffff;
   border: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  max-width: 26px !important;
+  max-height: 26px !important;
+  border-radius: 50% !important;
   cursor: pointer;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: bold;
-  transition: all 0.2s;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+  box-sizing: border-box !important;
 }
 .admin-media-delete-btn:hover {
-  background: #c53030;
-  transform: scale(1.1);
+  background: #b91c1c;
+  transform: scale(1.15);
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVENESS (STICKY FILTERS, 2-COL PHOTO GRID, COLLAPSIBLE SIDEBAR)
+   ========================================================================== */
+@media (max-width: 850px) {
+  .admin-layout {
+    grid-template-columns: 60px 1fr;
+    transition: all 0.3s ease;
+  }
+
+  .admin-sidebar {
+    width: 60px;
+    padding: 16px 8px;
+    overflow: hidden;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+  }
+
+  .admin-sidebar .admin-brand-name {
+    display: none;
+  }
+
+  .admin-sidebar .admin-nav-item {
+    justify-content: center;
+    padding: 10px 0;
+  }
+
+  .admin-sidebar .admin-nav-item span {
+    display: none;
+  }
+
+  .admin-sidebar .admin-sidebar-footer {
+    display: none;
+  }
+
+  /* Expanded mobile drawer */
+  .admin-sidebar.is-mobile-open {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 240px;
+    height: 100vh;
+    z-index: 1000;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    padding: 20px 16px;
+  }
+
+  .admin-sidebar.is-mobile-open .admin-brand-name,
+  .admin-sidebar.is-mobile-open .admin-nav-item span,
+  .admin-sidebar.is-mobile-open .admin-sidebar-footer {
+    display: block;
+  }
+
+  .admin-sidebar.is-mobile-open .admin-nav-item {
+    justify-content: flex-start;
+    padding: 10px 14px;
+  }
+
+  /* Mobile Sticky Filters Widget */
+  .admin-media-filters-widget {
+    position: sticky;
+    top: 10px;
+    z-index: 80;
+    background: #ffffff;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+    border-color: #dcdad4;
+  }
+
+  .admin-media-filters-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .admin-filter-actions {
+    grid-column: span 2;
+    justify-content: space-between;
+    padding-top: 4px;
+    border-top: 1px dashed var(--admin-line);
+    margin-top: 2px;
+  }
+
+  /* Photo Grid strictly 2 columns on mobile */
+  .admin-media-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
 }

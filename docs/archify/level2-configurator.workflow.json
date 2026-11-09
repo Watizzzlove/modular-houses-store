@@ -1,0 +1,67 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Конфигуратор — Алгоритм каскадного подбора фото и расчета сметы (Уровень 2)",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "standard",
+    "output": "docs/archify/level2-configurator.html"
+  },
+  "lanes": [
+    { "id": "ui", "label": "UI Клиента (configurator.js)" },
+    { "id": "api", "label": "Express API (/api/configurator)" },
+    { "id": "sql", "label": "Каскадный поиск SQLite (media_items)" },
+    { "id": "pricing", "label": "Расчет сметы и Корзина" }
+  ],
+  "phases": [
+    { "id": "filter_phase", "label": "1. Фильтры комплектации", "fromCol": 0, "toCol": 1 },
+    { "id": "cascade_phase", "label": "2. Каскадный подбор фото", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "cart_phase", "label": "3. Смета и отправка в заказ", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "cascade_loop", "label": "Каскадный фолбек", "lane": "sql", "fromCol": 2, "toCol": 3, "variant": "emphasis" }
+  ],
+  "mainPath": ["user_filter", "ui_update", "api_request", "match_entrance", "fallback_base", "attach_plan", "render_slides", "calc_price", "add_to_cart"],
+  "nodes": [
+    { "id": "user_filter", "lane": "ui", "col": 0, "type": "frontend", "label": "Выбор параметров", "sublabel": "Серия + Цвет + Размер + Пристрой", "width": 140 },
+    { "id": "ui_update", "lane": "ui", "col": 1, "type": "frontend", "label": "State Machine", "sublabel": "Переключение активных кнопок", "width": 140 },
+    { "id": "api_request", "lane": "api", "col": 2, "type": "backend", "label": "GET /:series/photos", "sublabel": "configKey, color, entrance", "width": 140 },
+    { "id": "match_entrance", "lane": "sql", "col": 2, "type": "database", "label": "Поиск с пристроем", "sublabel": "entrance_kind & terrace_type", "tag": "Точное совпадение", "width": 140 },
+    { "id": "fallback_base", "lane": "sql", "col": 3, "type": "database", "label": "Фолбек на базу", "sublabel": "entrance_kind = 'base'", "tag": "Если фото нет", "width": 140 },
+    { "id": "attach_plan", "lane": "sql", "col": 4, "type": "database", "label": "Подтяжка чертежа", "sublabel": "kind = 'plan' для цвета", "tag": "Гарантия планировки", "width": 140 },
+    { "id": "render_slides", "lane": "ui", "col": 4, "type": "frontend", "label": "Галерея слайдов", "sublabel": "Экстерьер, интерьер, план", "width": 140 },
+    { "id": "calc_price", "lane": "pricing", "col": 4, "type": "backend", "label": "Калькуляция цены", "sublabel": "База + Размер + Пристрой", "width": 140 },
+    { "id": "add_to_cart", "lane": "pricing", "col": 5, "type": "frontend", "label": "В корзину / Заявка", "sublabel": "Cart.addItem() или лид", "width": 140 }
+  ],
+  "edges": [
+    { "id": "e_filter_to_state", "from": "user_filter", "to": "ui_update", "variant": "default" },
+    { "id": "e_state_to_api", "from": "ui_update", "to": "api_request", "label": "fetch", "variant": "emphasis" },
+    { "id": "e_api_to_sql", "from": "api_request", "to": "match_entrance", "variant": "default" },
+    { "id": "e_match_to_fallback", "from": "match_entrance", "to": "fallback_base", "label": "нет фото", "variant": "dashed" },
+    { "id": "e_fallback_to_plan", "from": "fallback_base", "to": "attach_plan", "variant": "default" },
+    { "id": "e_plan_to_render", "from": "attach_plan", "to": "render_slides", "label": "slides[]", "variant": "emphasis" },
+    { "id": "e_render_to_calc", "from": "render_slides", "to": "calc_price", "variant": "default" },
+    { "id": "e_calc_to_cart", "from": "calc_price", "to": "add_to_cart", "label": "Итог ₽", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Каскадная логика подбора фото",
+      "items": [
+        "1. Проверяем наличие точных фото с выбранным типом пристроя (крыльцо / терраса)",
+        "2. Если отдельного сета фото с пристроем нет — подтягиваем базовый экстерьер дома",
+        "3. Если в найденном сете нет планировки — автоматически прикрепляем чертеж нужного цвета"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Динамический пересчет стоимости",
+      "items": [
+        "Базовая цена серии берется из таблицы series",
+        "Добавляется стоимость выбранного размера из configurations (цена заложена в папку каталога)",
+        "Добавляется опция расширения: крыльцо (+180 000 ₽), открытая (+260 000 ₽) или закрытая терраса (+420 000 ₽)"
+      ]
+    }
+  ]
+}

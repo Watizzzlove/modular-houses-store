@@ -1,4 +1,11 @@
-// Cart & Payment Management for Dokabani Store
+// Клиентский модуль корзины, авторизации перед покупкой и оформления заказа (public/js/cart.js).
+// Отвечает за:
+// - хранение товаров корзины в localStorage (синхронизируется между страницами)
+// - выдвижную боковую шторку корзины (cart drawer) с подсчетом общей суммы
+// - гейткипер сделки: проверка авторизации перед оформлением и показ модалки входа/регистрации по push-коду
+// - автоматический бесшовный переход к модалке чекаута сразу после успешной регистрации/входа
+// - отправку заказа на сервер и перенаправление на страницу оплаты или успеха
+
 const Cart = (function () {
   const STORAGE_KEY = 'doka_cart';
 
@@ -47,6 +54,21 @@ const Cart = (function () {
     }
   }
 
+  function changeQuantity(index, delta) {
+    const items = getItems();
+    if (index >= 0 && index < items.length) {
+      const currentQty = Number(items[index].quantity) || 1;
+      const newQty = currentQty + delta;
+      if (newQty <= 0) {
+        items.splice(index, 1);
+        showToast('Товар удален из корзины');
+      } else {
+        items[index].quantity = newQty;
+      }
+      saveItems(items);
+    }
+  }
+
   function clear() {
     localStorage.removeItem(STORAGE_KEY);
     updateBadges();
@@ -67,7 +89,7 @@ const Cart = (function () {
     const badges = document.querySelectorAll('[data-cart-badge]');
     badges.forEach(b => {
       b.textContent = count;
-      b.style.display = count > 0 ? 'inline-grid' : 'none';
+      b.style.display = count > 0 ? 'flex' : 'none';
     });
   }
 
@@ -126,13 +148,22 @@ const Cart = (function () {
     itemsContainer.innerHTML = items.map((item, idx) => {
       const detailsList = item.details ? Object.entries(item.details).map(([k, v]) => `${k}: ${v}`).join(' • ') : '';
       const thumb = item.image || '/houses/altai/9x9.5__p4259000/bronze/main.jpg';
+      const qty = Number(item.quantity) || 1;
+      const totalItemPrice = (Number(item.price) || 0) * qty;
       return `
         <div class="cart-item">
           <img src="${thumb}" alt="${item.title}" class="cart-item-thumb">
-          <div>
+          <div class="cart-item-body">
             <h4 class="cart-item-title">${item.title}</h4>
             <div class="cart-item-desc">${detailsList}</div>
-            <div class="cart-item-price">${formatPrice(item.price)} × ${item.quantity || 1}</div>
+            <div class="cart-item-footer-row">
+              <div class="cart-qty-control">
+                <button type="button" class="cart-qty-btn" data-cart-qty-dec="${idx}" title="Убавить количество" aria-label="Убавить">−</button>
+                <span class="cart-qty-val">${qty}</span>
+                <button type="button" class="cart-qty-btn" data-cart-qty-inc="${idx}" title="Добавить количество" aria-label="Добавить">+</button>
+              </div>
+              <div class="cart-item-price">${formatPrice(totalItemPrice)}</div>
+            </div>
           </div>
           <button class="cart-item-remove" type="button" data-cart-remove="${idx}" title="Удалить">✕</button>
         </div>
@@ -174,65 +205,99 @@ const Cart = (function () {
     let authModal = document.querySelector('[data-cart-auth-modal]');
     if (!authModal) {
       authModal = document.createElement('div');
-      authModal.className = 'cart-checkout-modal';
+      authModal.className = 'checkout-modal-overlay';
       authModal.setAttribute('data-cart-auth-modal', '');
       authModal.innerHTML = `
-        <div class="cart-checkout-card" style="max-width: 460px;">
-          <div class="cart-checkout-head">
-            <h3 style="margin: 0; font-size: 20px;">Оформление заказа</h3>
+        <div class="checkout-modal-card">
+          <div class="checkout-modal-header">
+            <div>
+              <h3 class="checkout-modal-title">Оформление заказа</h3>
+              <p class="checkout-modal-sub">Вход или регистрация в личном кабинете</p>
+            </div>
             <button type="button" class="checkout-close-btn" data-close-auth-modal aria-label="Закрыть">&times;</button>
           </div>
 
-          <div style="background: #fff9e6; border: 1px solid #ffe399; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: #7a5400; line-height: 1.45;">
-            <strong>Зарегистрируйтесь или войдите</strong>, чтобы продолжить оформление заказа. В личном кабинете вы сможете отслеживать этапы производства дома, доставку и статус оплаты.
+          <div style="background: #fff8eb; border: 1px solid #fce3b8; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; font-size: 13.5px; color: #8a5800; line-height: 1.45;">
+            <strong>Внимание:</strong> Продолжить оформление сделки можно только после регистрации или авторизации в личном кабинете. В кабинете вы сможете отслеживать этапы производства дома на заводе, доставку и статус платежа.
           </div>
 
-          <div style="display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-            <button type="button" id="cartAuthTabReg" style="background: #1c1d1f; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 700; font-size: 13px; cursor: pointer;">
-              Регистрация
+          <div style="display: flex; gap: 8px; margin-bottom: 18px; background: #f0eee9; padding: 4px; border-radius: 12px;">
+            <button type="button" id="cartAuthTabReg" style="flex:1; background: #ffffff; color: #1c1d1f; border: none; border-radius: 9px; padding: 9px 14px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.06);">
+              Регистрация по телефону
             </button>
-            <button type="button" id="cartAuthTabLogin" style="background: none; color: #666; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 700; font-size: 13px; cursor: pointer;">
+            <button type="button" id="cartAuthTabLogin" style="flex:1; background: transparent; color: #6a6864; border: none; border-radius: 9px; padding: 9px 14px; font-weight: 700; font-size: 14px; cursor: pointer;">
               Вход
             </button>
           </div>
 
           <!-- REGISTER FORM -->
+          <!-- REGISTER STEP 1 FORM -->
           <form id="cartRegisterForm">
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Ваше имя</label>
-              <input type="text" name="name" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="Иван Иванов" required>
+            <div class="checkout-label" style="margin-bottom: 12px;">
+              <span>Ваше имя</span>
+              <input type="text" name="name" class="checkout-input" placeholder="Иван Иванов" required>
             </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Номер телефона</label>
-              <input type="tel" name="phone" id="cartRegPhoneInput" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="+7 (999) 000-00-00" required>
+            <div class="checkout-label" style="margin-bottom: 12px;">
+              <span>Номер телефона (РФ)</span>
+              <input type="tel" name="phone" id="cartRegPhoneInput" class="checkout-input" placeholder="+7 (999) 000-00-00" required>
             </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Email (необязательно)</label>
-              <input type="email" name="email" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="mail@example.com">
+            <div class="checkout-label" style="margin-bottom: 12px;">
+              <span>Придумайте пароль (от 6 символов)</span>
+              <input type="password" name="password" id="cartRegPassword" class="checkout-input" placeholder="••••••••" minlength="6" required>
             </div>
-            <div class="form-group" style="margin-bottom: 18px;">
-              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Пароль для личного кабинета</label>
-              <input type="password" name="password" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="Минимум 6 символов" minlength="6" required>
+            <div class="checkout-label" style="margin-bottom: 18px;">
+              <span>Подтвердите пароль</span>
+              <input type="password" name="passwordConfirm" id="cartRegPasswordConfirm" class="checkout-input" placeholder="••••••••" minlength="6" required>
             </div>
-            <button type="submit" class="btn-hero-orange" style="width: 100%; padding: 12px; font-size: 15px;">
-              Зарегистрироваться и продолжить
+            <button type="submit" class="btn-hero-orange checkout-submit-btn" style="width: 100%; height: 48px; font-size: 15px;">
+              Далее → Получить push-код
             </button>
+          </form>
+
+          <!-- REGISTER STEP 2 PUSH CODE -->
+          <form id="cartPushCodeForm" style="display: none; text-align: center;">
+            <div style="background: #fff8eb; border: 1px solid #fce3b8; color: #b46b00; padding: 12px 14px; border-radius: 12px; font-size: 13.5px; font-weight: 600; margin-bottom: 16px; line-height: 1.45;">
+              📲 Push-уведомление отправлено на номер:<br>
+              <strong id="cartSentPhoneDisplay" style="color: #1c1d1f; font-size: 14.5px;"></strong>
+              <div id="cartDevCodeHint" style="margin-top: 6px; font-size: 13px; color: #8a5800;"></div>
+            </div>
+            <div class="checkout-label" style="margin-bottom: 16px;">
+              <span style="text-align: center;">Код из push-уведомления</span>
+              <input type="text" name="pushCode" id="cartPushCodeInput" class="checkout-input" style="text-align: center; font-size: 24px; letter-spacing: 10px; font-weight: 800;" maxlength="6" placeholder="••••" required autocomplete="one-time-code">
+            </div>
+            <button type="submit" class="btn-hero-orange checkout-submit-btn" style="width: 100%; height: 48px; font-size: 15px; margin-bottom: 12px;">
+              Подтвердить и продолжить заказ
+            </button>
+            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+              <button type="button" id="cartBackToStep1Btn" style="background:none; border:none; color: #6a6864; cursor:pointer; text-decoration: underline;">
+                ← Изменить номер
+              </button>
+              <button type="button" id="cartResendCodeBtn" style="background:none; border:none; color: var(--accent); cursor:pointer; font-weight: 700;">
+                Отправить push повторно
+              </button>
+            </div>
           </form>
 
           <!-- LOGIN FORM -->
           <form id="cartLoginForm" style="display: none;">
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Телефон или Email</label>
-              <input type="text" name="login" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="+7 (999) 000-00-00 или email" required>
+            <div class="checkout-label" style="margin-bottom: 12px;">
+              <span>Номер телефона или Email</span>
+              <input type="text" name="login" class="checkout-input" placeholder="+7 (999) 000-00-00 или email" required>
             </div>
-            <div class="form-group" style="margin-bottom: 18px;">
-              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Пароль</label>
-              <input type="password" name="password" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="••••••••" required>
+            <div class="checkout-label" style="margin-bottom: 18px;">
+              <span>Пароль</span>
+              <input type="password" name="password" class="checkout-input" placeholder="••••••••" required>
             </div>
-            <button type="submit" class="btn-hero-orange" style="width: 100%; padding: 12px; font-size: 15px;">
+            <button type="submit" class="btn-hero-orange checkout-submit-btn" style="width: 100%; height: 48px; font-size: 15px;">
               Войти и продолжить заказ
             </button>
           </form>
+
+          <div style="margin-top: 20px; text-align: center; border-top: 1px solid #f0eee9; padding-top: 14px;">
+            <a href="/profile.html?action=checkout" style="font-size: 13px; color: #6a6864; text-decoration: underline;">
+              Перейти на отдельную страницу личного кабинета →
+            </a>
+          </div>
         </div>
       `;
       document.body.appendChild(authModal);
@@ -243,42 +308,122 @@ const Cart = (function () {
         document.body.style.overflow = '';
       });
 
+      // Bind backdrop click to close
+      authModal.addEventListener('click', (e) => {
+        if (e.target === authModal) {
+          authModal.classList.remove('is-open');
+          document.body.style.overflow = '';
+        }
+      });
+
       // Bind tabs
       const tabReg = authModal.querySelector('#cartAuthTabReg');
       const tabLogin = authModal.querySelector('#cartAuthTabLogin');
       const regForm = authModal.querySelector('#cartRegisterForm');
+      const pushForm = authModal.querySelector('#cartPushCodeForm');
       const loginForm = authModal.querySelector('#cartLoginForm');
 
       tabReg.addEventListener('click', () => {
-        tabReg.style.background = '#1c1d1f'; tabReg.style.color = '#fff';
-        tabLogin.style.background = 'none'; tabLogin.style.color = '#666';
-        regForm.style.display = 'block'; loginForm.style.display = 'none';
+        tabReg.style.background = '#ffffff'; tabReg.style.color = '#1c1d1f'; tabReg.style.boxShadow = '0 2px 6px rgba(0,0,0,0.06)';
+        tabLogin.style.background = 'transparent'; tabLogin.style.color = '#6a6864'; tabLogin.style.boxShadow = 'none';
+        regForm.style.display = 'block'; pushForm.style.display = 'none'; loginForm.style.display = 'none';
       });
 
       tabLogin.addEventListener('click', () => {
-        tabLogin.style.background = '#1c1d1f'; tabLogin.style.color = '#fff';
-        tabReg.style.background = 'none'; tabReg.style.color = '#666';
-        loginForm.style.display = 'block'; regForm.style.display = 'none';
+        tabLogin.style.background = '#ffffff'; tabLogin.style.color = '#1c1d1f'; tabLogin.style.boxShadow = '0 2px 6px rgba(0,0,0,0.06)';
+        tabReg.style.background = 'transparent'; tabReg.style.color = '#6a6864'; tabReg.style.boxShadow = 'none';
+        loginForm.style.display = 'block'; regForm.style.display = 'none'; pushForm.style.display = 'none';
       });
 
       applyPhoneMask(authModal.querySelector('#cartRegPhoneInput'));
 
-      // Register submit
+      let cartPendingReg = null;
+
+      authModal.querySelector('#cartBackToStep1Btn').addEventListener('click', () => {
+        pushForm.style.display = 'none';
+        regForm.style.display = 'block';
+      });
+
+      // Register Step 1: Send push code
       regForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = regForm.querySelector('button');
+        const name = regForm.name.value.trim();
+        const phone = regForm.phone.value.trim();
+        const password = regForm.password.value;
+        const passwordConfirm = regForm.passwordConfirm.value;
+
+        if (password !== passwordConfirm) {
+          showToast('Введенные пароли не совпадают', true);
+          return;
+        }
+
+        const btn = regForm.querySelector('button[type="submit"]');
         btn.disabled = true;
-        btn.textContent = 'Регистрация...';
+        btn.textContent = 'Отправка push-кода...';
+
+        // Pre-request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission().catch(() => {});
+        }
 
         try {
-          const res = await fetch('/api/auth/register', {
+          const res = await fetch('/api/auth/send-push-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, password, passwordConfirm })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            cartPendingReg = { name, phone: data.phone, password, passwordConfirm };
+            regForm.style.display = 'none';
+            pushForm.style.display = 'block';
+            authModal.querySelector('#cartSentPhoneDisplay').textContent = data.phone;
+            if (data.devCode) {
+              authModal.querySelector('#cartDevCodeHint').textContent = `Код подтверждения: ${data.devCode}`;
+            }
+            authModal.querySelector('#cartPushCodeInput').focus();
+
+            // Trigger system Web Push Notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+              try {
+                new Notification('MODUL.HAUS', {
+                  body: `Ваш проверочный push-код: ${data.devCode || '1111'}`,
+                  icon: '/favicon.ico'
+                });
+              } catch (e) {}
+            }
+            showToast('Push-код отправлен!');
+          } else {
+            showToast(data.error || 'Ошибка отправки push-кода', true);
+          }
+        } catch (err) {
+          showToast('Ошибка связи с сервером', true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Далее → Получить push-код';
+        }
+      });
+
+      // Register Step 2: Verify code
+      pushForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = authModal.querySelector('#cartPushCodeInput').value.trim();
+        if (!code || !cartPendingReg) return;
+
+        const btn = pushForm.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Проверка...';
+
+        try {
+          const res = await fetch('/api/auth/register-phone', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              name: regForm.name.value,
-              phone: regForm.phone.value,
-              email: regForm.email.value,
-              password: regForm.password.value
+              phone: cartPendingReg.phone,
+              code,
+              password: cartPendingReg.password,
+              passwordConfirm: cartPendingReg.passwordConfirm,
+              name: cartPendingReg.name
             })
           });
           const data = await res.json();
@@ -286,16 +431,20 @@ const Cart = (function () {
             localStorage.setItem('user_token', data.token);
             localStorage.setItem('user_data', JSON.stringify(data.user));
             authModal.classList.remove('is-open');
+            document.body.style.overflow = '';
+            document.querySelectorAll('[data-user-nav-name]').forEach(el => {
+              el.textContent = data.user.name ? data.user.name.split(' ')[0] : 'Кабинет';
+            });
+            showToast('Успешная регистрация!');
             openCheckoutModal();
           } else {
-            alert(data.error || 'Ошибка при регистрации');
-            btn.disabled = false;
-            btn.textContent = 'Зарегистрироваться и продолжить';
+            showToast(data.error || 'Неверный проверочный код', true);
           }
         } catch (err) {
-          alert('Ошибка связи с сервером');
+          showToast('Ошибка связи с сервером', true);
+        } finally {
           btn.disabled = false;
-          btn.textContent = 'Зарегистрироваться и продолжить';
+          btn.textContent = 'Подтвердить и продолжить заказ';
         }
       });
 
@@ -320,14 +469,19 @@ const Cart = (function () {
             localStorage.setItem('user_token', data.token);
             localStorage.setItem('user_data', JSON.stringify(data.user));
             authModal.classList.remove('is-open');
+            document.body.style.overflow = '';
+            document.querySelectorAll('[data-user-nav-name]').forEach(el => {
+              el.textContent = data.user.name ? data.user.name.split(' ')[0] : 'Кабинет';
+            });
+            showToast('Успешный вход в аккаунт!');
             openCheckoutModal();
           } else {
-            alert(data.error || 'Ошибка входа');
+            showToast(data.error || 'Ошибка входа', true);
             btn.disabled = false;
             btn.textContent = 'Войти и продолжить заказ';
           }
         } catch (err) {
-          alert('Ошибка связи с сервером');
+          showToast('Ошибка связи с сервером', true);
           btn.disabled = false;
           btn.textContent = 'Войти и продолжить заказ';
         }
@@ -340,8 +494,62 @@ const Cart = (function () {
 
   function openCheckoutModal() {
     closeDrawer();
-    const modal = document.querySelector('[data-checkout-modal]');
-    if (!modal) return;
+    let modal = document.querySelector('[data-checkout-modal]');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.className = 'checkout-modal-overlay';
+      modal.setAttribute('data-checkout-modal', '');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('role', 'dialog');
+      modal.innerHTML = `
+        <div class="checkout-modal-card">
+          <div class="checkout-modal-header">
+            <div>
+              <h3 class="checkout-modal-title">Оформление заказа</h3>
+              <p class="checkout-modal-sub">Заполните данные для доставки и договора</p>
+            </div>
+            <button type="button" class="checkout-close-btn" data-checkout-close aria-label="Закрыть">&times;</button>
+          </div>
+          <div class="checkout-order-summary" data-checkout-summary></div>
+          <form data-checkout-form id="checkoutForm">
+            <div class="checkout-form-group">
+              <label class="checkout-label">
+                <span>Ваше имя</span>
+                <input type="text" name="name" class="checkout-input" placeholder="Иван Иванов" required>
+              </label>
+              <label class="checkout-label">
+                <span>Номер телефона (РФ)</span>
+                <input type="tel" name="phone" class="checkout-input" placeholder="+7 999 123-45-67" required>
+              </label>
+              <label class="checkout-label">
+                <span>Email (для договора и чека)</span>
+                <input type="email" name="email" class="checkout-input" placeholder="ivan@example.ru">
+              </label>
+              <label class="checkout-label">
+                <span>Адрес доставки или населённый пункт</span>
+                <input type="text" name="address" class="checkout-input" placeholder="г. Екатеринбург, ул. Ленина, д. 10">
+              </label>
+              <label class="checkout-label">
+                <span>Комментарий к заказу</span>
+                <textarea name="comment" class="checkout-input" rows="2" placeholder="Удобное время доставки, тип фундамента..."></textarea>
+              </label>
+            </div>
+            <button type="submit" class="btn-hero-orange checkout-submit-btn">Перейти к оплате</button>
+          </form>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.querySelector('form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleCheckout(modal.querySelector('form'));
+      });
+      modal.querySelector('[data-checkout-close]').addEventListener('click', () => {
+        closeCheckoutModal();
+      });
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeCheckoutModal();
+      });
+    }
 
     // Pre-fill user data if authenticated
     try {
@@ -548,8 +756,24 @@ const Cart = (function () {
       return;
     }
 
+    // Decrement item quantity
+    const decBtn = e.target.closest('[data-cart-qty-dec]');
+    if (decBtn) {
+      const idx = parseInt(decBtn.dataset.cartQtyDec, 10);
+      changeQuantity(idx, -1);
+      return;
+    }
+
+    // Increment item quantity
+    const incBtn = e.target.closest('[data-cart-qty-inc]');
+    if (incBtn) {
+      const idx = parseInt(incBtn.dataset.cartQtyInc, 10);
+      changeQuantity(idx, 1);
+      return;
+    }
+
     // Proceed to checkout
-    const checkoutBtn = e.target.closest('[data-cart-checkout]');
+    const checkoutBtn = e.target.closest('[data-cart-checkout], [data-cart-checkout-btn]');
     if (checkoutBtn) {
       e.preventDefault();
       const items = getItems();
@@ -625,6 +849,7 @@ const Cart = (function () {
     getItems,
     addItem,
     removeItem,
+    changeQuantity,
     clear,
     openDrawer,
     closeDrawer,

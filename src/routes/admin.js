@@ -1,3 +1,13 @@
+// Роутер панели администратора (src/routes/admin.js).
+// Защищен middleware requireAuth - доступ разрешен только по валидному JWT токену.
+// Отвечает за:
+// - управление медиатекой: загрузка фото через multer, фильтрация по категориям/сериям/цветам, удаление
+// - управление каталогом: редактирование цен, описаний серий и доступных габаритов
+// - управление текстовым контентом сайта (site_content)
+// - настройка платежных шлюзов (ЮKassa) и уведомлений (почта админа, SMTP, SMS)
+// - управление заказами: просмотр полного списка, смена статуса производства и оплаты
+// - просмотр журнала отправленных email-уведомлений (outbox)
+
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -5,11 +15,12 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../db/database');
 const { requireAuth } = require('../middleware/auth');
+const mailer = require('../services/mailer');
 
-// Protect all admin routes with JWT
+// Все эндпоинты админки требуют авторизации
 router.use(requireAuth);
 
-// Multer storage configuration for uploads
+// Конфигурация multer для загрузки файлов в папку uploads/
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadPath = path.join(__dirname, '../../uploads');
@@ -25,9 +36,10 @@ const storage = multer.diskStorage({
   }
 });
 
+// Ограничение размера до 15 МБ и фильтр только валидных графических форматов
 const upload = multer({
   storage,
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB limit
+  limits: { fileSize: 15 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (/\.(jpe?g|png|webp)$/i.test(file.originalname)) {
       cb(null, true);
@@ -37,35 +49,50 @@ const upload = multer({
   }
 });
 
-// --- MEDIA MANAGEMENT ---
+// Управление медиатекой и фотографиями
 
-// GET /api/admin/media - List media items
+// GET /api/admin/media
+// Выборка фотографий с фильтрацией по серии, категории, цвету и типу фото
 router.get('/media', (req, res) => {
-  const { seriesId, configId } = req.query;
+  const { seriesId, categoryId, color, kind, configId } = req.query;
   let sql = `
-    SELECT m.*, s.name as series_name, c.label as config_label
+    SELECT m.*, s.name as series_name, c.label as config_label, s.category_id, cat.name as category_name
     FROM media_items m
     JOIN series s ON m.series_id = s.id
+    JOIN categories cat ON s.category_id = cat.id
     LEFT JOIN configurations c ON m.configuration_id = c.id
     WHERE 1=1
   `;
   const params = [];
 
-  if (seriesId) {
+  if (seriesId && seriesId !== 'all') {
     sql += ' AND m.series_id = ?';
     params.push(seriesId);
   }
-  if (configId) {
+  if (categoryId && categoryId !== 'all') {
+    sql += ' AND s.category_id = ?';
+    params.push(categoryId);
+  }
+  if (color && color !== 'all') {
+    sql += ' AND m.color = ?';
+    params.push(color);
+  }
+  if (kind && kind !== 'all') {
+    sql += ' AND m.kind = ?';
+    params.push(kind);
+  }
+  if (configId && configId !== 'all') {
     sql += ' AND m.configuration_id = ?';
     params.push(configId);
   }
 
-  sql += ' ORDER BY m.id DESC LIMIT 100';
+  sql += ' ORDER BY m.id DESC LIMIT 400';
   const items = db.prepare(sql).all(...params);
   res.json({ items });
 });
 
-// POST /api/admin/media/upload - Upload new photo
+// POST /api/admin/media/upload
+// Загрузка новой фотографии с привязкой к серии и комплектации
 router.post('/media/upload', upload.single('photo'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Файл фотографии не передан' });
@@ -99,18 +126,19 @@ router.post('/media/upload', upload.single('photo'), (req, res) => {
   });
 });
 
-// DELETE /api/admin/media/:id - Delete photo
+// DELETE /api/admin/media/:id
+// Удаление фото из базы и с диска (если это загрузка)
 router.delete('/media/:id', (req, res) => {
   const item = db.prepare('SELECT * FROM media_items WHERE id = ?').get(req.params.id);
   if (!item) {
     return res.status(404).json({ error: 'Медиафайл не найден' });
   }
 
-  // If file was uploaded to /uploads, remove from disk
+  // Если файл был загружен в /uploads, удаляем его физически с диска
   if (item.url && item.url.startsWith('/uploads/')) {
     const diskPath = path.join(__dirname, '../../uploads', path.basename(item.url));
     if (fs.existsSync(diskPath)) {
-      try { fs.unlinkSync(diskPath); } catch (e) { /* ignore */ }
+      try { fs.unlinkSync(diskPath); } catch (e) {}
     }
   }
 
@@ -118,9 +146,10 @@ router.delete('/media/:id', (req, res) => {
   res.json({ success: true, message: 'Фотография удалена' });
 });
 
-// --- CATALOG MANAGEMENT ---
+// Управление сериями и комплектациями
 
 // GET /api/admin/series
+// Получение полного списка серий с подсчетом количества доступных размеров и фото
 router.get('/series', (req, res) => {
   const series = db.prepare(`
     SELECT s.*, c.name as category_name,
@@ -134,6 +163,7 @@ router.get('/series', (req, res) => {
 });
 
 // PUT /api/admin/series/:id
+// Быстрое редактирование серии (название, слоган, базовая цена, статус активности)
 router.put('/series/:id', (req, res) => {
   const { name, tagline, description, basePrice, isActive, coverImage } = req.body;
   db.prepare(`
@@ -151,6 +181,7 @@ router.put('/series/:id', (req, res) => {
 });
 
 // GET /api/admin/configurations/:seriesId
+// Получение конфигураций выбранной серии
 router.get('/configurations/:seriesId', (req, res) => {
   const configs = db.prepare(`
     SELECT c.*,
@@ -163,6 +194,7 @@ router.get('/configurations/:seriesId', (req, res) => {
 });
 
 // PUT /api/admin/configurations/:id
+// Обновление параметров конкретного размера (цена, площадь, ширина, длина)
 router.put('/configurations/:id', (req, res) => {
   const { label, price, area, width, length } = req.body;
   db.prepare(`
@@ -179,6 +211,7 @@ router.put('/configurations/:id', (req, res) => {
 });
 
 // POST /api/admin/configurations
+// Добавление нового размера серии
 router.post('/configurations', (req, res) => {
   const { seriesId, key, label, width, length, area, price } = req.body;
   if (!seriesId || !key || !label || !price) {
@@ -202,7 +235,7 @@ router.post('/configurations', (req, res) => {
   res.status(201).json({ success: true, id: result.lastInsertRowid });
 });
 
-// --- SITE CONTENT MANAGEMENT ---
+// Управление контентом сайта
 
 // GET /api/admin/content
 router.get('/content', (req, res) => {
@@ -213,6 +246,7 @@ router.get('/content', (req, res) => {
 });
 
 // PUT /api/admin/content
+// Массовое сохранение текстовых полей сайта
 router.put('/content', (req, res) => {
   const entries = req.body;
   const updateStmt = db.prepare('INSERT OR REPLACE INTO site_content (key, value) VALUES (?, ?)');
@@ -226,7 +260,7 @@ router.put('/content', (req, res) => {
   res.json({ success: true, message: 'Контент сайта сохранён' });
 });
 
-// --- SETTINGS (YOOKASSA) ---
+// Системные настройки (ЮKassa, SMTP, SMS)
 
 // GET /api/admin/settings
 router.get('/settings', (req, res) => {
@@ -250,9 +284,28 @@ router.put('/settings', (req, res) => {
   res.json({ success: true, message: 'Настройки сохранены' });
 });
 
-// --- ORDERS MANAGEMENT ---
+// POST /api/admin/settings/test-mail
+// Проверка подключения к SMTP серверу и отправка тестового письма
+router.post('/settings/test-mail', async (req, res) => {
+  const result = await mailer.testSmtpConnection(req.body);
+  if (result.success) {
+    res.json({
+      success: true,
+      message: result.message || `Тестовое письмо успешно отправлено на ${result.to}!`,
+      messageId: result.messageId
+    });
+  } else {
+    res.status(400).json({
+      success: false,
+      error: result.error
+    });
+  }
+});
+
+// Управление заказами
 
 // GET /api/admin/orders
+// Список всех заказов с распарсенным JSON товаров
 router.get('/orders', (req, res) => {
   const orders = db.prepare(`
     SELECT * FROM orders ORDER BY id DESC
@@ -267,6 +320,7 @@ router.get('/orders', (req, res) => {
 });
 
 // PUT /api/admin/orders/:id/status
+// Смена статуса заказа (NEW -> PAID -> IN_PRODUCTION -> DELIVERING -> COMPLETED)
 router.put('/orders/:id/status', (req, res) => {
   const { paymentStatus, status } = req.body;
   if (paymentStatus && !['PENDING', 'PAID', 'CANCELLED'].includes(paymentStatus)) {
@@ -289,8 +343,8 @@ router.put('/orders/:id/status', (req, res) => {
   res.json({ success: true, message: 'Статус заказа обновлен' });
 });
 
-// GET /api/admin/outbox - View sent email notifications
-const mailer = require('../services/mailer');
+// GET /api/admin/outbox
+// Журнал отправленных почтовых уведомлений администратора
 router.get('/outbox', (req, res) => {
   const outbox = mailer.getOutbox();
   res.json({ outbox });

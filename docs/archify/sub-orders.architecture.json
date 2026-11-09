@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Заказы и Платежный Шлюз — Декомпозиция транзакций и жизненного цикла",
+    "subtitle": "Архитектура /api/orders: фиксация корзины, генерация DK-номера, ЮKassa/Sandbox и смена статусов",
+    "output": "docs/archify/sub-orders.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    {
+      "id": "cart_submit",
+      "type": "frontend",
+      "label": "Чекаут Корзины (UI)",
+      "sublabel": "POST /api/orders",
+      "icon": "frontend",
+      "tag": "Товары, телефон, адрес",
+      "pos": [40, 150],
+      "size": [170, 64]
+    },
+    {
+      "id": "lead_submit",
+      "type": "frontend",
+      "label": "Форма Заявки (Лид)",
+      "sublabel": "POST /api/orders/lead",
+      "icon": "frontend",
+      "tag": "Имя, телефон, вопрос",
+      "pos": [40, 320],
+      "size": [170, 64]
+    },
+    {
+      "id": "order_number_gen",
+      "type": "backend",
+      "label": "Генератор Номеров",
+      "sublabel": "DK-YYYYMMDD-XXXX",
+      "icon": "backend",
+      "tag": "Уникальный ID сделки",
+      "pos": [270, 150],
+      "size": [170, 64]
+    },
+    {
+      "id": "pay_init_endpoint",
+      "type": "backend",
+      "label": "Инициализация Оплаты",
+      "sublabel": "POST /api/orders/:id/pay",
+      "icon": "backend",
+      "tag": "Выбор ЮKassa или Sandbox",
+      "pos": [270, 320],
+      "size": [170, 64]
+    },
+    {
+      "id": "yookassa_client",
+      "type": "cloud",
+      "label": "Клиент ЮKassa API",
+      "sublabel": "https://api.yookassa.ru/v3",
+      "icon": "cloud",
+      "tag": "Basic Auth, Idempotence-Key",
+      "pos": [510, 100],
+      "size": [170, 60]
+    },
+    {
+      "id": "sandbox_gateway",
+      "type": "frontend",
+      "label": "Тестовый Шлюз Sandbox",
+      "sublabel": "public/pages/payment.html",
+      "icon": "frontend",
+      "tag": "Интерактивная оплата 0 руб.",
+      "pos": [510, 240],
+      "size": [170, 60]
+    },
+    {
+      "id": "payment_confirm",
+      "type": "backend",
+      "label": "Подтверждение Оплаты",
+      "sublabel": "POST /:id/confirm-payment",
+      "icon": "backend",
+      "tag": "Перевод в статус PAID",
+      "pos": [510, 380],
+      "size": [170, 60]
+    },
+    {
+      "id": "orders_lifecycle_db",
+      "type": "database",
+      "label": "Таблица orders (SQLite)",
+      "sublabel": "data/store.db",
+      "icon": "database",
+      "tag": "NEW -> PAID -> IN_PRODUCTION",
+      "pos": [740, 170],
+      "size": [170, 64]
+    },
+    {
+      "id": "admin_status_patch",
+      "type": "backend",
+      "label": "Смена Статуса в Цеху",
+      "sublabel": "PATCH /api/orders/:id/status",
+      "icon": "backend",
+      "tag": "Управление этапами сборки",
+      "pos": [740, 320],
+      "size": [170, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Прием Заказа и Лид-Формы",
+      "wraps": ["cart_submit", "lead_submit"]
+    },
+    {
+      "kind": "region",
+      "label": "Фиксация и Инициализация",
+      "wraps": ["order_number_gen", "pay_init_endpoint"]
+    },
+    {
+      "kind": "region",
+      "label": "Оркестратор Платежей (ЮKassa / Sandbox)",
+      "wraps": ["yookassa_client", "sandbox_gateway", "payment_confirm"]
+    },
+    {
+      "kind": "region",
+      "label": "Жизненный Цикл и База Данных",
+      "wraps": ["orders_lifecycle_db", "admin_status_patch"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "cart_to_gen",
+      "from": "cart_submit",
+      "to": "order_number_gen"
+    },
+    {
+      "id": "lead_to_db",
+      "from": "lead_submit",
+      "to": "orders_lifecycle_db"
+    },
+    {
+      "id": "gen_to_init",
+      "from": "order_number_gen",
+      "to": "pay_init_endpoint",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "init_to_yoo",
+      "from": "pay_init_endpoint",
+      "to": "yookassa_client"
+    },
+    {
+      "id": "init_to_sandbox",
+      "from": "pay_init_endpoint",
+      "to": "sandbox_gateway"
+    },
+    {
+      "id": "sandbox_to_confirm",
+      "from": "sandbox_gateway",
+      "to": "payment_confirm",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "confirm_to_db",
+      "from": "payment_confirm",
+      "to": "orders_lifecycle_db"
+    },
+    {
+      "id": "admin_to_db",
+      "from": "admin_status_patch",
+      "to": "orders_lifecycle_db",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Двойной режим оплаты (Production / Sandbox)",
+      "items": [
+        "Если в админке указаны shop_id и secret_key, платеж направляется в реальную ЮKassa",
+        "По умолчанию активен интерактивный sandbox шлюз: клиент видит страницу оплаты и подтверждает тестовую транзакцию",
+        "Транзакция мгновенно фиксируется со статусом PAID и чеком в базе данных"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Жизненный цикл производства",
+      "items": [
+        "Заказ автоматически получает статус PAID после проведения платежа",
+        "Администратор переводит заказ: IN_PRODUCTION (сборка каркаса) -> DELIVERING (транспортировка) -> COMPLETED (монтаж сдан)",
+        "Клиент видит текущий статус в своем личном кабинете в режиме реального времени"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Аутентификация — Жизненный цикл Push/SMS верификации и JWT (Уровень 2)",
+    "output": "docs/archify/level2-auth-push.html",
+    "viewBox": [1080, 750],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "standard"
+  },
+  "participants": [
+    { "id": "user", "type": "external", "label": "Покупатель", "sublabel": "Браузерная сессия" },
+    { "id": "ui", "type": "frontend", "label": "UI Корзины", "sublabel": "cart.js / profile" },
+    { "id": "api", "type": "backend", "label": "Auth API", "sublabel": "/api/auth" },
+    { "id": "mem", "type": "security", "label": "Сессии памяти", "sublabel": "Map 5 минут" },
+    { "id": "push", "type": "messagebus", "label": "Web Push / SMS", "sublabel": "Уведомления" },
+    { "id": "db", "type": "database", "label": "База SQLite", "sublabel": "users & orders" }
+  ],
+  "segments": [
+    { "from": 150, "to": 260, "label": "1. Гейткипер сделки и запрос push-кода" },
+    { "from": 270, "to": 460, "label": "2. Доставка кода и верификация" },
+    { "from": 470, "to": 660, "label": "3. Создание аккаунта, JWT и переход к оплате" }
+  ],
+  "messages": [
+    { "id": "m_checkout", "from": "user", "to": "ui", "y": 165, "label": "Клик «Оформить заказ»", "variant": "default" },
+    { "id": "m_show_modal", "from": "ui", "to": "user", "y": 205, "label": "Требуется авторизация (модалка)", "variant": "security" },
+    { "id": "m_send_code", "from": "user", "to": "ui", "y": 245, "label": "Ввод телефона + пароля", "variant": "default" },
+    { "id": "m_req_push", "from": "ui", "to": "api", "y": 285, "label": "POST /send-push-code", "variant": "emphasis" },
+    { "id": "m_store_session", "from": "api", "to": "mem", "y": 325, "label": "Сохранить код (TTL 5 мин)", "variant": "default" },
+    { "id": "m_emit_push", "from": "api", "to": "push", "y": 365, "label": "Отправка кода 4 цифры", "variant": "dashed" },
+    { "id": "m_deliver_user", "from": "push", "to": "user", "y": 405, "label": "Системное Push / SMS", "variant": "return" },
+    { "id": "m_enter_code", "from": "user", "to": "ui", "y": 445, "label": "Ввод 4 цифр подтверждения", "variant": "default" },
+    { "id": "m_verify_post", "from": "ui", "to": "api", "y": 485, "label": "POST /register-phone", "variant": "emphasis" },
+    { "id": "m_check_mem", "from": "api", "to": "mem", "y": 525, "label": "Сверка кода и срока сессии", "variant": "security" },
+    { "id": "m_save_user", "from": "api", "to": "db", "y": 565, "label": "INSERT user + связка заказов", "variant": "default" },
+    { "id": "m_jwt_token", "from": "api", "to": "ui", "y": 605, "label": "201 Created + JWT Token 30d", "variant": "return" },
+    { "id": "m_auto_checkout", "from": "ui", "to": "user", "y": 645, "label": "Авто-открытие чекаута", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "ui", "from": 165, "to": 650, "type": "frontend" },
+    { "participant": "api", "from": 280, "to": 610, "type": "backend" },
+    { "participant": "mem", "from": 320, "to": 535, "type": "security" },
+    { "participant": "push", "from": 360, "to": 410, "type": "messagebus" },
+    { "participant": "db", "from": 560, "to": 575, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Гейткипер оформления сделки",
+      "items": [
+        "Покупатель не может оформить заказ вслепую без регистрации",
+        "Модальное окно четко объясняет: продолжить сделку можно после входа",
+        "Сразу после ввода кода из push-уведомления модалка плавно передает управление чекауту"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Безопасность и привязка заказов",
+      "items": [
+        "Код валиден ровно 5 минут и хранится в оперативной памяти сервера",
+        "При первой регистрации система автоматически находит и привязывает прошлые гостевые заказы клиента по номеру телефона",
+        "Клиент получает JWT сессию на 30 дней и полный доступ к личному кабинету"
+      ]
+    }
+  ]
+}

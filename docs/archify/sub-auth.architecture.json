@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Модуль Авторизации и Безопасности — Декомпозиция Push-верификации и JWT",
+    "subtitle": "Архитектура /api/auth: нормализация телефонов, сессии памяти 5 мин, Web Push, bcrypt и выдача JWT",
+    "output": "docs/archify/sub-auth.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    {
+      "id": "phone_input",
+      "type": "frontend",
+      "label": "Ввод Телефона (UI)",
+      "sublabel": "cart.js / profile.js",
+      "icon": "frontend",
+      "tag": "Нормализация к +7XXXXXXXXXX",
+      "pos": [40, 150],
+      "size": [170, 64]
+    },
+    {
+      "id": "profile_endpoint",
+      "type": "frontend",
+      "label": "Личный Кабинет",
+      "sublabel": "GET /api/auth/me",
+      "icon": "frontend",
+      "tag": "Профиль и история покупок",
+      "pos": [40, 320],
+      "size": [170, 64]
+    },
+    {
+      "id": "send_code_api",
+      "type": "backend",
+      "label": "POST /send-push-code",
+      "sublabel": "src/routes/auth.js",
+      "icon": "backend",
+      "tag": "Генерация 4-значного кода",
+      "pos": [270, 150],
+      "size": [170, 64]
+    },
+    {
+      "id": "verify_code_api",
+      "type": "backend",
+      "label": "POST /register-phone",
+      "sublabel": "src/routes/auth.js",
+      "icon": "backend",
+      "tag": "Проверка введенного кода",
+      "pos": [270, 320],
+      "size": [170, 64]
+    },
+    {
+      "id": "memory_session_store",
+      "type": "security",
+      "label": "Сессии Памяти (Map)",
+      "sublabel": "verificationSessions",
+      "icon": "security",
+      "tag": "TTL 5 минут, защита от брутфорса",
+      "pos": [510, 100],
+      "size": [170, 60]
+    },
+    {
+      "id": "push_sms_dispatcher",
+      "type": "messagebus",
+      "label": "Диспетчер Уведомлений",
+      "sublabel": "Web Push API & SMS.ru",
+      "icon": "messagebus",
+      "tag": "Доставка в системную шторку",
+      "pos": [510, 240],
+      "size": [170, 60]
+    },
+    {
+      "id": "jwt_issuer",
+      "type": "security",
+      "label": "Генератор JWT",
+      "sublabel": "jwt.sign() 30 days",
+      "icon": "security",
+      "tag": "HMAC-SHA256, payload юзера",
+      "pos": [510, 380],
+      "size": [170, 60]
+    },
+    {
+      "id": "user_db_writer",
+      "type": "database",
+      "label": "Запись в Таблицу users",
+      "sublabel": "INSERT user + bcrypt(10)",
+      "icon": "database",
+      "tag": "Безопасное хранение хэша",
+      "pos": [740, 170],
+      "size": [170, 64]
+    },
+    {
+      "id": "order_linker",
+      "type": "database",
+      "label": "Автосвязка Заказов",
+      "sublabel": "UPDATE orders SET user_id",
+      "icon": "database",
+      "tag": "Привязка старых сделок гостя",
+      "pos": [740, 320],
+      "size": [170, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Клиентский Ввод и Кабинет",
+      "wraps": ["phone_input", "profile_endpoint"]
+    },
+    {
+      "kind": "region",
+      "label": "Шлюз Подтверждения (API)",
+      "wraps": ["send_code_api", "verify_code_api"]
+    },
+    {
+      "kind": "region",
+      "label": "Безопасность и Доставка Кодов",
+      "wraps": ["memory_session_store", "push_sms_dispatcher", "jwt_issuer"]
+    },
+    {
+      "kind": "region",
+      "label": "База Данных и Привязка Истории",
+      "wraps": ["user_db_writer", "order_linker"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "input_to_send",
+      "from": "phone_input",
+      "to": "send_code_api"
+    },
+    {
+      "id": "input_to_verify",
+      "from": "phone_input",
+      "to": "verify_code_api",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "send_to_mem",
+      "from": "send_code_api",
+      "to": "memory_session_store"
+    },
+    {
+      "id": "send_to_push",
+      "from": "send_code_api",
+      "to": "push_sms_dispatcher"
+    },
+    {
+      "id": "verify_to_mem",
+      "from": "verify_code_api",
+      "to": "memory_session_store"
+    },
+    {
+      "id": "verify_to_jwt",
+      "from": "verify_code_api",
+      "to": "jwt_issuer"
+    },
+    {
+      "id": "verify_to_db",
+      "from": "verify_code_api",
+      "to": "user_db_writer"
+    },
+    {
+      "id": "db_to_linker",
+      "from": "user_db_writer",
+      "to": "order_linker",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "jwt_to_profile",
+      "from": "jwt_issuer",
+      "to": "profile_endpoint"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Защищенные сессии в оперативной памяти",
+      "items": [
+        "Код подтверждения живет ровно 5 минут в Map verificationSessions",
+        "После успешного подтверждения сессия удаляется из памяти для предотвращения повторного использования",
+        "Пароль пользователя хэшируется алгоритмом bcrypt с солью 10 раундов"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Ретроспективная привязка заказов",
+      "items": [
+        "Если пользователь раньше делал заказ без регистрации, указав свой телефон",
+        "При первой регистрации система автоматически находит все совпадения по номеру",
+        "Заказы привязываются к новому user_id и сразу появляются в личном кабинете"
+      ]
+    }
+  ]
+}

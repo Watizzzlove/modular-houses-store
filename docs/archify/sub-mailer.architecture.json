@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Сервис Уведомлений — Декомпозиция почтового релея (Dual Relay)",
+    "subtitle": "Архитектура mailer.js: FormSubmit HTTPS relay, прямой SMTP Mail.ru и аудит outbox.log",
+    "output": "docs/archify/sub-mailer.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    {
+      "id": "event_order",
+      "type": "backend",
+      "label": "Событие: Новый Заказ",
+      "sublabel": "sendOrderNotification()",
+      "icon": "backend",
+      "tag": "DK-номер, смета, состав товаров",
+      "pos": [40, 150],
+      "size": [170, 64]
+    },
+    {
+      "id": "event_lead",
+      "type": "backend",
+      "label": "Событие: Новая Заявка",
+      "sublabel": "sendLeadNotification()",
+      "icon": "backend",
+      "tag": "Имя, телефон, выбранный проект",
+      "pos": [40, 320],
+      "size": [170, 64]
+    },
+    {
+      "id": "mailer_dispatcher",
+      "type": "messagebus",
+      "label": "Диспетчер mailer.js",
+      "sublabel": "Асинхронная отправка",
+      "icon": "messagebus",
+      "tag": "Не блокирует ответ клиенту",
+      "pos": [270, 150],
+      "size": [170, 64]
+    },
+    {
+      "id": "outbox_logger",
+      "type": "database",
+      "label": "Журнал outbox.log",
+      "sublabel": "data/outbox.log (JSON)",
+      "icon": "database",
+      "tag": "Локальная история отправок",
+      "pos": [270, 320],
+      "size": [170, 64]
+    },
+    {
+      "id": "formsubmit_client",
+      "type": "cloud",
+      "label": "1. FormSubmit HTTP API",
+      "sublabel": "POST https://formsubmit.co/ajax",
+      "icon": "cloud",
+      "tag": "Доставка без пароля от ящика",
+      "pos": [510, 100],
+      "size": [170, 60]
+    },
+    {
+      "id": "smtp_client",
+      "type": "cloud",
+      "label": "2. Прямой SMTP Mail.ru",
+      "sublabel": "nodemailer (port 465 SSL)",
+      "icon": "cloud",
+      "tag": "Пароль приложения smtp_pass",
+      "pos": [510, 240],
+      "size": [170, 60]
+    },
+    {
+      "id": "admin_outbox_api",
+      "type": "backend",
+      "label": "GET /api/admin/outbox",
+      "sublabel": "Просмотр логов в админке",
+      "icon": "backend",
+      "tag": "Аудит доставленных писем",
+      "pos": [510, 380],
+      "size": [170, 60]
+    },
+    {
+      "id": "admin_inbox",
+      "type": "external",
+      "label": "Почтовый Ящик Админа",
+      "sublabel": "watislove@internet.ru",
+      "icon": "external",
+      "tag": "Мгновенное получение сделок",
+      "pos": [740, 170],
+      "size": [170, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Триггеры Уведомлений",
+      "wraps": ["event_order", "event_lead"]
+    },
+    {
+      "kind": "region",
+      "label": "Ядро Сервиса и Логирование",
+      "wraps": ["mailer_dispatcher", "outbox_logger"]
+    },
+    {
+      "kind": "region",
+      "label": "Двойной Канал Доставки (Dual Relay)",
+      "wraps": ["formsubmit_client", "smtp_client", "admin_outbox_api"]
+    },
+    {
+      "kind": "region",
+      "label": "Конечный Получатель",
+      "wraps": ["admin_inbox"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "order_to_disp",
+      "from": "event_order",
+      "to": "mailer_dispatcher"
+    },
+    {
+      "id": "lead_to_disp",
+      "from": "event_lead",
+      "to": "mailer_dispatcher"
+    },
+    {
+      "id": "disp_to_log",
+      "from": "mailer_dispatcher",
+      "to": "outbox_logger",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "disp_to_fs",
+      "from": "mailer_dispatcher",
+      "to": "formsubmit_client"
+    },
+    {
+      "id": "disp_to_smtp",
+      "from": "mailer_dispatcher",
+      "to": "smtp_client"
+    },
+    {
+      "id": "log_to_api",
+      "from": "outbox_logger",
+      "to": "admin_outbox_api"
+    },
+    {
+      "id": "fs_to_inbox",
+      "from": "formsubmit_client",
+      "to": "admin_inbox"
+    },
+    {
+      "id": "smtp_to_inbox",
+      "from": "smtp_client",
+      "to": "admin_inbox"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Отказоустойчивость Dual Relay",
+      "items": [
+        "Канал 1 (FormSubmit): доставляет письмо через HTTPS REST API без риска блокировки пароля приложения",
+        "Канал 2 (Nodemailer SMTP): параллельно отправляет письмо через smtp.mail.ru:465 при наличии smtp_pass",
+        "Оба вызова выполняются в фоне без ожидания ответа, поэтому клиенты не испытывают задержек при чекауте"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Локальный журнал Outbox",
+      "items": [
+        "Каждое отправленное письмо сериализуется в JSON и дописывается в data/outbox.log",
+        "Администратор в любой момент может открыть вкладку «Журнал писем» и увидеть всю историю"
+      ]
+    }
+  ]
+}

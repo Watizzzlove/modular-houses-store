@@ -1,8 +1,16 @@
+// Роутер публичного каталога товаров (src/routes/catalog.js).
+// Отвечает за:
+// - получение списка серий с фильтрацией по категории (дома или бани)
+// - детальную информацию о выбранной серии и ее комплектациях
+// - популярные пресеты (хиты продаж для витрины главной страницы)
+// - динамический текстовый контент сайта из таблицы site_content
+
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
 
 // GET /api/catalog/series
+// Список активных серий (можно фильтровать ?category=houses или ?category=saunas)
 router.get('/series', (req, res) => {
   const { category } = req.query;
   let query = `
@@ -24,6 +32,7 @@ router.get('/series', (req, res) => {
 });
 
 // GET /api/catalog/series/:slug
+// Полная карточка серии с перечнем всех доступных габаритов
 router.get('/series/:slug', (req, res) => {
   const series = db.prepare(`
     SELECT s.*, c.slug as category_slug, c.name as category_name
@@ -46,6 +55,7 @@ router.get('/series/:slug', (req, res) => {
 });
 
 // GET /api/catalog/presets
+// Популярные готовые конфигурации с плашками ("Хит продаж", "Выбор покупателей")
 router.get('/presets', (req, res) => {
   const presets = db.prepare(`
     SELECT * FROM popular_presets
@@ -61,6 +71,7 @@ router.get('/presets', (req, res) => {
 });
 
 // GET /api/catalog/content
+// Текстовые блоки страниц, слоганы и контактная информация
 router.get('/content', (req, res) => {
   const rows = db.prepare('SELECT key, value FROM site_content').all();
   const content = {};

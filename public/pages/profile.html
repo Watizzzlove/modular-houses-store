@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Личный кабинет — MODUL.HAUS | Модульные дома и бани</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* ==========================================================================
+       MINIMALIST CLEAN PROFILE PAGE (MATCHING MAIN SITE)
+       ========================================================================== */
+    body {
+      background-color: #faf9f6;
+      color: #1c1d1f;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: var(--font-body);
+    }
+
+    .site-header {
+      background: #141416;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      padding: 16px 0;
+    }
+
+    .profile-page-main {
+      padding-top: 110px;
+      padding-bottom: 90px;
+      flex: 1;
+    }
+
+    .profile-container {
+      width: min(1140px, 100% - 48px);
+      margin: 0 auto;
+    }
+
+    /* AUTHENTICATION VIEW (CLEAN, MINIMALIST, NO NESTED BOXES) */
+    .auth-section-wrap {
+      max-width: 480px;
+      margin: 40px auto;
+      text-align: left;
+    }
+
+    .auth-main-title {
+      font-family: var(--font-heading);
+      font-size: clamp(28px, 3.5vw, 36px);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin: 0 0 10px;
+      color: #1c1d1f;
+    }
+
+    .auth-lead-sub {
+      font-size: 15px;
+      color: #6a6864;
+      line-height: 1.5;
+      margin: 0 0 28px;
+    }
+
+    .auth-mode-switch {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 26px;
+      border-bottom: 2px solid #eae8e1;
+      padding-bottom: 8px;
+    }
+
+    .auth-mode-btn {
+      background: none;
+      border: none;
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 700;
+      color: #8c8a86;
+      cursor: pointer;
+      padding: 6px 4px;
+      position: relative;
+      transition: color 0.2s ease;
+    }
+
+    .auth-mode-btn.is-active {
+      color: #1c1d1f;
+    }
+
+    .auth-mode-btn.is-active::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .form-field-group {
+      margin-bottom: 16px;
+    }
+
+    .form-field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #4a4844;
+      margin-bottom: 6px;
+    }
+
+    .form-field-input {
+      width: 100%;
+      height: 50px;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 1px solid #dcdad4;
+      color: #1c1d1f;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-field-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(245, 162, 10, 0.15);
+    }
+
+    .code-digit-input {
+      text-align: center;
+      font-size: 26px;
+      letter-spacing: 12px;
+      font-weight: 800;
+      font-family: monospace;
+    }
+
+    .push-delivery-notice {
+      background: #fff8eb;
+      border: 1px solid #fce3b8;
+      color: #925c00;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      margin-bottom: 20px;
+    }
+
+    .btn-action-primary {
+      width: 100%;
+      height: 52px;
+      background: var(--accent);
+      color: #1c1d1f;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(245, 162, 10, 0.3);
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-action-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-action-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* LOGGED IN USER VIEW */
+    .user-greeting-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid #e4e2dc;
+      margin-bottom: 40px;
+    }
+
+    .user-greeting-title {
+      font-family: var(--font-heading);
+      font-size: clamp(28px, 3.5vw, 38px);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin: 0 0 6px;
+      color: #1c1d1f;
+    }
+
+    .user-greeting-meta {
+      font-size: 15px;
+      color: #6a6864;
+    }
+
+    .user-greeting-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn-text-logout {
+      background: none;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: #8c8a86;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 6px 0;
+      transition: color 0.15s ease;
+    }
+
+    .btn-text-logout:hover {
+      color: #dc2626;
+    }
+
+    .section-headline {
+      font-family: var(--font-heading);
+      font-size: 24px;
+      font-weight: 800;
+      color: #1c1d1f;
+      margin: 0 0 20px;
+    }
+
+    /* MINIMALIST ORDER ROW / CARD */
+    .order-flat-card {
+      background: #ffffff;
+      border: 1px solid #e6e4df;
+      border-radius: 18px;
+      padding: 26px 30px;
+      margin-bottom: 22px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .order-flat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f1efe9;
+      margin-bottom: 18px;
+    }
+
+    .order-flat-num {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 800;
+      color: #1c1d1f;
+    }
+
+    .order-flat-date {
+      font-size: 13px;
+      color: #767471;
+      margin-top: 2px;
+    }
+
+    .order-flat-sum {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 900;
+      color: #1c1d1f;
+      text-align: right;
+    }
+
+    .status-pill-paid {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #e6f7ec;
+      color: #0d6832;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-pill-pending {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: #fff8eb;
+      color: #b46b00;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    /* CLEAN TEXT TRACKER (NO NESTED BOXES) */
+    .order-flat-tracker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 24px;
+      align-items: center;
+      padding: 14px 0;
+      font-size: 13.5px;
+      color: #8c8a86;
+      border-bottom: 1px solid #f1efe9;
+      margin-bottom: 16px;
+    }
+
+    .tracker-node {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tracker-node.is-done {
+      color: #0d6832;
+      font-weight: 700;
+    }
+
+    .tracker-node.is-current {
+      color: #b46b00;
+      font-weight: 800;
+    }
+
+    .order-flat-items {
+      font-size: 14px;
+      color: #4a4844;
+      line-height: 1.6;
+    }
+
+    .empty-state-clean {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6a6864;
+    }
+
+    .empty-state-clean h3 {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 800;
+      color: #1c1d1f;
+      margin: 14px 0 8px;
+    }
+
+    /* TOAST NOTIFICATION */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #1c1d1f;
+      color: #ffffff;
+      padding: 12px 22px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SITE HEADER (FIXED WITH DARK BACKDROP PRESERVING LOGO & NAV CONTRAST) -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="brand-logo">MODUL.HAUS</a>
+
+      <nav class="nav-pill-menu" aria-label="Основное меню">
+        <a href="/houses.html">Дома</a>
+        <a href="/saunas.html">Бани</a>
+        <a href="/#projects">Этапы работы</a>
+        <a href="/#projects">Отзывы</a>
+        <a href="/#lead-form">Контакты</a>
+        <a href="/#stats">О нас</a>
+      </nav>
+
+      <div class="header-right-actions">
+        <a href="tel:88006003344" class="header-phone">8 (800) 600-33-44</a>
+        
+        <a href="/profile.html" class="header-icon-action" aria-label="Личный кабинет" title="Личный кабинет">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span class="header-icon-label" data-user-nav-name>Кабинет</span>
+        </a>
+
+        <button type="button" class="header-icon-action" data-cart-open aria-label="Открыть корзину">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span class="header-icon-label">Корзина</span>
+          <span class="header-icon-badge" data-cart-badge style="display: none;">0</span>
+        </button>
+
+        <a href="/#lead-form" class="btn-header-cta">Оставить заявку</a>
+
+        <button type="button" class="burger-btn" data-burger-btn aria-label="Открыть мобильное меню">
+          <span class="burger-bar"></span>
+          <span class="burger-bar"></span>
+          <span class="burger-bar"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER NAVIGATION -->
+  <div class="drawer-backdrop" data-drawer-backdrop></div>
+  <aside class="mobile-nav-drawer" data-mobile-drawer aria-label="Мобильное меню">
+    <div class="mobile-drawer-top">
+      <div class="mobile-drawer-logo">MODUL.HAUS</div>
+      <button type="button" class="mobile-drawer-close" data-drawer-close aria-label="Закрыть меню">&times;</button>
+    </div>
+    <div class="mobile-nav-links">
+      <a href="/houses.html" class="mobile-nav-link">Дома</a>
+      <a href="/saunas.html" class="mobile-nav-link">Бани</a>
+      <a href="/#projects" class="mobile-nav-link">Популярные проекты</a>
+      <a href="/#stats" class="mobile-nav-link">О нас</a>
+      <a href="/#lead-form" class="mobile-nav-link">Контакты</a>
+    </div>
+    <div class="mobile-drawer-bottom">
+      <a href="tel:88006003344" class="mobile-phone-link">8 (800) 600-33-44</a>
+      <a href="/#lead-form" class="mobile-btn-cta">Оставить заявку</a>
+    </div>
+  </aside>
+
+  <!-- MAIN VIEW -->
+  <main class="profile-page-main">
+    <div class="profile-container">
+
+      <!-- ==========================================
+           1. LOGGED OUT: CLEAN LOGIN & REGISTER FORM
+           ========================================== -->
+      <section id="authRequiredCard" class="auth-section-wrap" style="display: none;">
+        <h1 class="auth-main-title">Личный кабинет</h1>
+        <p class="auth-lead-sub">Вход и регистрация для продолжения сделки и отслеживания заказов</p>
+
+        <div class="auth-mode-switch">
+          <button type="button" class="auth-mode-btn is-active" id="tabLoginBtn">Вход</button>
+          <button type="button" class="auth-mode-btn" id="tabRegisterBtn">Регистрация по телефону</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="cabinetLoginForm">
+          <div class="form-field-group">
+            <label class="form-field-label">Номер телефона или Email</label>
+            <input type="text" name="login" class="form-field-input" placeholder="+7 (999) 000-00-00 или email" required>
+          </div>
+          <div class="form-field-group" style="margin-bottom: 24px;">
+            <label class="form-field-label">Пароль</label>
+            <input type="password" name="password" class="form-field-input" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn-action-primary">Войти в кабинет</button>
+        </form>
+
+        <!-- REGISTER STEP 1: PHONE & PASSWORD -->
+        <form id="regStep1Form" style="display: none;">
+          <div class="form-field-group">
+            <label class="form-field-label">Ваше имя</label>
+            <input type="text" name="name" class="form-field-input" placeholder="Иван Иванов" required>
+          </div>
+          <div class="form-field-group">
+            <label class="form-field-label">Номер телефона (РФ)</label>
+            <input type="tel" name="phone" id="regPhoneInput" class="form-field-input" placeholder="+7 (999) 000-00-00" required>
+          </div>
+          <div class="form-field-group">
+            <label class="form-field-label">Придумайте пароль (от 6 символов)</label>
+            <input type="password" name="password" class="form-field-input" placeholder="••••••••" minlength="6" required>
+          </div>
+          <div class="form-field-group" style="margin-bottom: 24px;">
+            <label class="form-field-label">Подтвердите пароль</label>
+            <input type="password" name="passwordConfirm" class="form-field-input" placeholder="••••••••" minlength="6" required>
+          </div>
+          <button type="submit" class="btn-action-primary" id="regStep1NextBtn">
+            Далее → Получить push-код
+          </button>
+        </form>
+
+        <!-- REGISTER STEP 2: PUSH CODE VERIFICATION -->
+        <div id="regStep2Box" style="display: none;">
+          <div class="push-delivery-notice">
+            📲 Push-код отправлен на номер:<br>
+            <strong id="sentPhoneNotice" style="color: #1c1d1f; font-size: 15px;"></strong>
+            <div id="pushCodeValueHint" style="margin-top: 4px; font-weight: 700;"></div>
+          </div>
+
+          <form id="regStep2Form">
+            <div class="form-field-group" style="margin-bottom: 24px;">
+              <label class="form-field-label" style="text-align: center;">Код из push-уведомления</label>
+              <input type="text" id="regCodeInput" class="form-field-input code-digit-input" maxlength="6" placeholder="••••" required autocomplete="one-time-code">
+            </div>
+
+            <button type="submit" class="btn-action-primary" id="regStep2ConfirmBtn">
+              Подтвердить и войти
+            </button>
+
+            <div style="margin-top: 18px; display: flex; justify-content: space-between; font-size: 13.5px;">
+              <button type="button" id="regBackToStep1Btn" style="background:none; border:none; color: #6a6864; cursor:pointer; text-decoration: underline;">
+                ← Изменить номер
+              </button>
+              <button type="button" id="resendCodeBtn" style="background:none; border:none; color: var(--accent); cursor:pointer; font-weight:700;">
+                Отправить push повторно
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+
+      <!-- ==========================================
+           2. LOGGED IN DASHBOARD (CLEAN & SPACIOUS)
+           ========================================== -->
+      <section id="cabinetDashboard" style="display: none;">
+        
+        <!-- USER GREETING BANNER -->
+        <div class="user-greeting-banner">
+          <div>
+            <h1 class="user-greeting-title" id="userNameDisplay">Личный кабинет</h1>
+            <div class="user-greeting-meta" id="userContactDisplay">
+              <span>+7 (000) 000-00-00</span>
+            </div>
+          </div>
+
+          <div class="user-greeting-actions">
+            <a href="/houses.html" class="btn-header-cta" style="padding: 10px 22px; font-size: 14px; text-decoration: none;">
+              + Выбрать проект
+            </a>
+            <button type="button" class="btn-text-logout" id="logoutBtn" title="Выйти из аккаунта">
+              Выйти из аккаунта
+            </button>
+          </div>
+        </div>
+
+        <!-- ORDERS SECTION -->
+        <h2 class="section-headline">Мои заказы</h2>
+
+        <div id="ordersContainer">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- CART DRAWER OVERLAY (IDENTICAL TO HOUSES.HTML) -->
+  <div class="cart-drawer-overlay" data-cart-overlay aria-modal="true" role="dialog">
+    <div class="cart-drawer-panel">
+      <div class="cart-drawer-header">
+        <div class="cart-drawer-title">Корзина покупок</div>
+        <button type="button" class="cart-close-btn" data-cart-close aria-label="Закрыть">&times;</button>
+      </div>
+      <div class="cart-drawer-body" data-cart-items-container>
+        <div class="cart-empty-state" data-cart-empty>
+          <div class="cart-empty-icon" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+          </div>
+          <div class="cart-empty-title">Ваша корзина пуста</div>
+          <p class="cart-empty-sub">Выберите понравившийся проект в каталоге или настройте его в конструкторе</p>
+        </div>
+        <div class="cart-items-list" data-cart-items></div>
+      </div>
+      <div class="cart-drawer-footer" data-cart-footer style="display: none;">
+        <div class="cart-total-row">
+          <span class="cart-total-label">Итого:</span>
+          <span class="cart-total-val" data-cart-total>0 ₽</span>
+        </div>
+        <button type="button" class="cart-checkout-btn" data-cart-checkout>Оформить заказ и оплатить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT MODAL OVERLAY -->
+  <div class="checkout-modal-overlay" data-checkout-modal aria-modal="true" role="dialog" aria-hidden="true">
+    <div class="checkout-modal-card">
+      <div class="checkout-modal-header">
+        <div>
+          <h3 class="checkout-modal-title">Оформление заказа</h3>
+          <p class="checkout-modal-sub">Заполните данные для доставки и договора</p>
+        </div>
+        <button type="button" class="checkout-close-btn" data-checkout-close aria-label="Закрыть">&times;</button>
+      </div>
+      <div class="checkout-order-summary" data-checkout-summary></div>
+      <form data-checkout-form id="checkoutForm">
+        <div class="checkout-form-group">
+          <label class="checkout-label">
+            <span>Ваше имя</span>
+            <input type="text" name="name" class="checkout-input" placeholder="Иван Иванов" required>
+          </label>
+          <label class="checkout-label">
+            <span>Номер телефона (РФ)</span>
+            <input type="tel" name="phone" class="checkout-input" placeholder="+7 999 123-45-67" required>
+          </label>
+          <label class="checkout-label">
+            <span>Email (для договора и чека)</span>
+            <input type="email" name="email" class="checkout-input" placeholder="ivan@example.ru">
+          </label>
+          <label class="checkout-label">
+            <span>Адрес доставки или населённый пункт</span>
+            <input type="text" name="address" class="checkout-input" placeholder="г. Екатеринбург, ул. Ленина, д. 10">
+          </label>
+          <label class="checkout-label">
+            <span>Комментарий к заказу</span>
+            <textarea name="comment" class="checkout-input" rows="2" placeholder="Удобное время доставки, тип фундамента..."></textarea>
+          </label>
+        </div>
+        <button type="submit" class="btn-hero-orange checkout-submit-btn">Перейти к оплате</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- SITE FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>© 2026 MODUL.HAUS. Завод модульных домов и бань. Все права защищены.</div>
+      <div style="font-size: 13px; opacity: 0.7;">
+        Премиальные модульные конструкции под ключ с доставкой по всей РФ
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/cart.js"></script>
+  <script>
+    const STAGE_TITLES = ['1. Оформлен', '2. Оплачен', '3. В производстве', '4. Доставляется', '5. Сдан'];
+
+    function getStageIndex(status) {
+      switch (status) {
+        case 'NEW': return 0;
+        case 'PAID': return 1;
+        case 'IN_PRODUCTION': return 2;
+        case 'DELIVERING': return 3;
+        case 'COMPLETED': return 4;
+        default: return 0;
+      }
+    }
+
+    let token = localStorage.getItem('user_token');
+    let pendingRegData = null;
+
+    function showToast(msg, isError = false) {
+      let container = document.querySelector('.toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.style.background = isError ? '#dc2626' : '#1c1d1f';
+      toast.innerHTML = `<span style="color:${isError ? '#fca5a5' : '#f5a20a'};font-weight:bold;">${isError ? '✕' : '✓'}</span> <span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+      }, 3000);
+    }
+
+    // Tab Switcher
+    const tabLoginBtn = document.getElementById('tabLoginBtn');
+    const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+    const loginForm = document.getElementById('cabinetLoginForm');
+    const regStep1Form = document.getElementById('regStep1Form');
+    const regStep2Box = document.getElementById('regStep2Box');
+
+    tabLoginBtn.addEventListener('click', () => {
+      tabLoginBtn.classList.add('is-active');
+      tabRegisterBtn.classList.remove('is-active');
+      loginForm.style.display = 'block';
+      regStep1Form.style.display = 'none';
+      regStep2Box.style.display = 'none';
+    });
+
+    tabRegisterBtn.addEventListener('click', () => {
+      tabRegisterBtn.classList.add('is-active');
+      tabLoginBtn.classList.remove('is-active');
+      loginForm.style.display = 'none';
+      regStep1Form.style.display = 'block';
+      regStep2Box.style.display = 'none';
+    });
+
+    document.getElementById('regBackToStep1Btn').addEventListener('click', () => {
+      regStep2Box.style.display = 'none';
+      regStep1Form.style.display = 'block';
+    });
+
+    // Login submit
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.textContent = 'Вход...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            login: form.login.value,
+            password: form.password.value
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('user_token', data.token);
+          localStorage.setItem('user_data', JSON.stringify(data.user));
+          token = data.token;
+          showToast('Успешный вход в личный кабинет');
+          checkAuthAndRender();
+
+          // If came from checkout action, open cart or checkout modal
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('action') === 'checkout') {
+            setTimeout(() => Cart.openCheckoutModal(), 400);
+          }
+        } else {
+          showToast(data.error || 'Ошибка входа', true);
+          btn.disabled = false;
+          btn.textContent = 'Войти в кабинет';
+        }
+      } catch (err) {
+        showToast('Ошибка связи с сервером', true);
+        btn.disabled = false;
+        btn.textContent = 'Войти в кабинет';
+      }
+    });
+
+    // Register Step 1
+    regStep1Form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = regStep1Form.name.value.trim();
+      const phone = regStep1Form.phone.value.trim();
+      const password = regStep1Form.password.value;
+      const passwordConfirm = regStep1Form.passwordConfirm.value;
+
+      if (password !== passwordConfirm) {
+        showToast('Введенные пароли не совпадают', true);
+        return;
+      }
+
+      const nextBtn = document.getElementById('regStep1NextBtn');
+      nextBtn.disabled = true;
+      nextBtn.textContent = 'Отправка push-кода...';
+
+      // Request native browser push permission
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+
+      try {
+        const res = await fetch('/api/auth/send-push-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, password, passwordConfirm })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          pendingRegData = { name, phone: data.phone, password, passwordConfirm };
+          document.getElementById('sentPhoneNotice').textContent = data.phone;
+          if (data.devCode) {
+            document.getElementById('pushCodeValueHint').textContent = `Код подтверждения: ${data.devCode}`;
+          }
+          regStep1Form.style.display = 'none';
+          regStep2Box.style.display = 'block';
+
+          // Native Browser Push Notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification('MODUL.HAUS', {
+                body: `Ваш проверочный push-код: ${data.devCode || '1111'}`,
+                icon: '/favicon.ico'
+              });
+            } catch (e) {}
+          }
+
+          showToast('Push-код отправлен!');
+          document.getElementById('regCodeInput').focus();
+        } else {
+          showToast(data.error || 'Ошибка при отправке push', true);
+        }
+      } catch (err) {
+        showToast('Ошибка сети: ' + err.message, true);
+      } finally {
+        nextBtn.disabled = false;
+        nextBtn.textContent = 'Далее → Получить push-код';
+      }
+    });
+
+    // Register Step 2
+    document.getElementById('regStep2Form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = document.getElementById('regCodeInput').value.trim();
+      if (!code) {
+        showToast('Введите код подтверждения', true);
+        return;
+      }
+
+      const confirmBtn = document.getElementById('regStep2ConfirmBtn');
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Проверка...';
+
+      try {
+        const res = await fetch('/api/auth/register-phone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: pendingRegData.phone,
+            code,
+            password: pendingRegData.password,
+            passwordConfirm: pendingRegData.passwordConfirm,
+            name: pendingRegData.name
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('user_token', data.token);
+          localStorage.setItem('user_data', JSON.stringify(data.user));
+          token = data.token;
+          showToast('Регистрация успешно завершена!');
+          checkAuthAndRender();
+
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('action') === 'checkout') {
+            setTimeout(() => Cart.openCheckoutModal(), 400);
+          }
+        } else {
+          showToast(data.error || 'Неверный проверочный код', true);
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Подтвердить и войти';
+        }
+      } catch (err) {
+        showToast('Ошибка связи с сервером', true);
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Подтвердить и войти';
+      }
+    });
+
+    // Logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('user_token');
+        localStorage.removeItem('user_data');
+        token = null;
+        pendingRegData = null;
+
+        document.querySelectorAll('[data-user-nav-name]').forEach(el => el.textContent = 'Кабинет');
+
+        document.getElementById('cabinetDashboard').style.display = 'none';
+        document.getElementById('authRequiredCard').style.display = 'block';
+        tabLoginBtn.click();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('Вы успешно вышли из аккаунта');
+      });
+    }
+
+    // Check Auth and Render
+    async function checkAuthAndRender() {
+      token = localStorage.getItem('user_token');
+      if (!token) {
+        document.getElementById('authRequiredCard').style.display = 'block';
+        document.getElementById('cabinetDashboard').style.display = 'none';
+        return;
+      }
+
+      try {
+        const meRes = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!meRes.ok) {
+          localStorage.removeItem('user_token');
+          localStorage.removeItem('user_data');
+          document.getElementById('authRequiredCard').style.display = 'block';
+          document.getElementById('cabinetDashboard').style.display = 'none';
+          return;
+        }
+
+        const { user } = await meRes.json();
+        document.getElementById('authRequiredCard').style.display = 'none';
+        document.getElementById('cabinetDashboard').style.display = 'block';
+
+        document.getElementById('userNameDisplay').textContent = user.name || 'Клиент';
+        document.getElementById('userContactDisplay').querySelector('span').textContent = user.phone || 'Номер не указан';
+
+        document.querySelectorAll('[data-user-nav-name]').forEach(el => {
+          el.textContent = user.name ? user.name.split(' ')[0] : 'Кабинет';
+        });
+
+        loadUserOrders();
+      } catch (e) {
+        console.error('Auth check error:', e);
+      }
+    }
+
+    async function loadUserOrders() {
+      const container = document.getElementById('ordersContainer');
+      container.innerHTML = '<div style="padding: 20px 0; color: #767471;">Загрузка истории заказов...</div>';
+
+      try {
+        const res = await fetch('/api/auth/my-orders', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const { orders } = await res.json();
+
+        if (!orders || orders.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state-clean">
+              <h3>У вас пока нет оформленных заказов</h3>
+              <p>Соберите проект дома или бани в конструкторе и оформите заказ</p>
+              <a href="/houses.html" class="btn-hero-orange" style="display: inline-block; margin-top: 16px; text-decoration: none;">
+                Перейти в каталог домов
+              </a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = orders.map(order => {
+          const currentStageIdx = getStageIndex(order.status);
+          const isPaid = order.payment_status === 'PAID';
+
+          const trackerHtml = STAGE_TITLES.map((t, i) => {
+            let cls = '';
+            let mark = (i + 1) + '.';
+            if (i < currentStageIdx) { cls = 'is-done'; mark = '✓'; }
+            else if (i === currentStageIdx) { cls = 'is-current'; mark = '●'; }
+            return `<span class="tracker-node ${cls}">${mark} ${t}</span>`;
+          }).join(' → ');
+
+          const itemsHtml = (order.items || []).map(it => {
+            const detailsList = it.details ? Object.entries(it.details).map(([k,v]) => `${k}: ${v}`).join(' • ') : '';
+            return `<div><strong>${it.title}</strong> — ${new Intl.NumberFormat('ru-RU').format(it.price * (it.quantity || 1))} ₽ ${detailsList ? `<br><small style="color: #767471;">${detailsList}</small>` : ''}</div>`;
+          }).join('<br>');
+
+          return `
+            <div class="order-flat-card">
+              <div class="order-flat-top">
+                <div>
+                  <div class="order-flat-num">Заказ № ${order.order_number}</div>
+                  <div class="order-flat-date">${new Date(order.created_at).toLocaleString('ru-RU')}</div>
+                </div>
+                <div style="text-align: right;">
+                  <div class="order-flat-sum">${new Intl.NumberFormat('ru-RU').format(order.total_price)} ₽</div>
+                  <span class="${isPaid ? 'status-pill-paid' : 'status-pill-pending'}">
+                    ${isPaid ? '✓ Оплачен' : 'Ожидает оплаты'}
+                  </span>
+                </div>
+              </div>
+
+              <div class="order-flat-tracker">
+                ${trackerHtml}
+              </div>
+
+              <div class="order-flat-items">
+                ${itemsHtml}
+              </div>
+
+              ${!isPaid ? `
+                <div style="margin-top: 18px; text-align: right;">
+                  <a href="/payment.html?orderId=${order.id}" class="btn-hero-orange" style="font-size: 13.5px; padding: 10px 22px; text-decoration: none; display: inline-block;">
+                    Оплатить заказ (0 ₽) →
+                  </a>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        container.innerHTML = `<div style="color: #ef4444; padding: 20px 0;">Ошибка загрузки заказов: ${err.message}</div>`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', checkAuthAndRender);
+  </script>
+</body>
+</html>

@@ -147,4 +147,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch (e) {}
 
+  // 7. FIXED HEADER SCROLL STATE
+  const siteHeader = document.querySelector('.site-header');
+  if (siteHeader) {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        siteHeader.classList.add('is-scrolled');
+      } else {
+        siteHeader.classList.remove('is-scrolled');
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+  }
+
 });

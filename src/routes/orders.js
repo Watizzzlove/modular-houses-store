@@ -1,3 +1,12 @@
+// Роутер обработки заказов, заявок и платежей (src/routes/orders.js).
+// Отвечает за:
+// - оформление заказа из корзины с валидацией номера телефона РФ
+// - отправку быстрых заявок на консультацию с форм сайта (лиды)
+// - интеграцию со шлюзом оплаты (ЮKassa API или тестовый интерактивный шлюз)
+// - подтверждение факта оплаты и перевод заказа в статус PAID
+// - управление жизненным циклом заказа администратором (NEW -> PAID -> IN_PRODUCTION -> DELIVERING -> COMPLETED)
+// - отправку email-уведомлений о новых сделках через mailer сервис
+
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
@@ -6,7 +15,7 @@ const crypto = require('crypto');
 const { optionalAuth, requireAuth } = require('../middleware/auth');
 const mailer = require('../services/mailer');
 
-// Russian phone format validator (+7/8 with 10-11 digits)
+// Валидатор формата номера телефона РФ (+7 или 8 с 10-11 цифрами)
 const PHONE_REGEX = /^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/;
 
 function isValidPhone(phone) {
@@ -16,12 +25,14 @@ function isValidPhone(phone) {
   return PHONE_REGEX.test(clean) && (digits.length === 10 || digits.length === 11);
 }
 
+// Чтение системных настроек (ключи ЮKassa, почта админа)
 function getSetting(key) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
   return row ? row.value : null;
 }
 
-// POST /api/orders - Create a new order from cart
+// POST /api/orders
+// Создание нового заказа из корзины покупателя
 router.post('/', optionalAuth, (req, res) => {
   const { customerName, customerPhone, customerEmail, customerAddress, customerComment, items } = req.body;
 
@@ -37,16 +48,19 @@ router.post('/', optionalAuth, (req, res) => {
     return res.status(400).json({ error: 'Корзина пуста' });
   }
 
+  // Считаем итоговую стоимость корзины
   let totalPrice = 0;
   for (const item of items) {
     totalPrice += Number(item.price || 0) * Number(item.quantity || 1);
   }
 
+  // Генерация уникального человекочитаемого номера заказа: DK-ГГГГММДД-XXXX
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const orderNumber = `DK-${dateStr}-${randomSuffix}`;
 
-  // Find user_id if authenticated or existing user
+  // Привязка к аккаунту: если пользователь залогинен, берем его id,
+  // иначе пробуем найти существующий аккаунт по совпадению телефона
   let userId = req.user ? req.user.id : null;
   if (!userId && (customerEmail || customerPhone)) {
     const cleanPhone = customerPhone.replace(/\D/g, '');
@@ -89,7 +103,7 @@ router.post('/', optionalAuth, (req, res) => {
     status: 'NEW'
   };
 
-  // Dispatch email notification to admin
+  // Отправляем email-уведомление администратору (асинхронно, без задержки ответа клиенту)
   mailer.sendOrderNotification(createdOrder).catch(console.error);
 
   res.status(201).json({
@@ -100,7 +114,8 @@ router.post('/', optionalAuth, (req, res) => {
   });
 });
 
-// POST /api/orders/lead - Consultation request from lead banner form (Screenshot 4)
+// POST /api/orders/lead
+// Быстрая заявка на консультацию или расчет стоимости (лид-форма)
 router.post('/lead', optionalAuth, (req, res) => {
   const { name, phone, comment } = req.body;
 
@@ -130,6 +145,7 @@ router.post('/lead', optionalAuth, (req, res) => {
     cleanComment
   );
 
+  // Оповещаем менеджера по почте
   mailer.sendLeadNotification({
     customer_name: cleanName,
     customer_phone: cleanPhone,
@@ -144,7 +160,8 @@ router.post('/lead', optionalAuth, (req, res) => {
   });
 });
 
-// GET /api/orders/:id - Get order details
+// GET /api/orders/:id
+// Получение подробной информации о заказе по его ID
 router.get('/:id', (req, res) => {
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!order) {
@@ -157,7 +174,9 @@ router.get('/:id', (req, res) => {
   });
 });
 
-// POST /api/orders/:id/pay - Initiate payment (Returns payment URL for YooKassa / Test Gateway)
+// POST /api/orders/:id/pay
+// Инициализация платежа: если настроена ЮKassa, стучимся в ее API,
+// иначе отдаем ссылку на наш тестовый интерактивный шлюз оплаты (sandbox)
 router.post('/:id/pay', async (req, res) => {
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!order) {
@@ -165,7 +184,12 @@ router.post('/:id/pay', async (req, res) => {
   }
 
   if (order.payment_status === 'PAID') {
-    return res.json({ success: true, message: 'Заказ уже оплачен', orderId: order.id, redirectUrl: `/order-success.html?orderId=${order.id}` });
+    return res.json({
+      success: true,
+      message: 'Заказ уже оплачен',
+      orderId: order.id,
+      redirectUrl: `/order-success.html?orderId=${order.id}`
+    });
   }
 
   const shopId = process.env.YOOKASSA_SHOP_ID || getSetting('yookassa_shop_id');
@@ -175,12 +199,12 @@ router.post('/:id/pay', async (req, res) => {
   const host = req.get('host') || 'localhost:3030';
   const returnUrl = `${protocol}://${host}/order-success.html?orderId=${order.id}`;
 
-  // If real YooKassa test credentials are provided:
+  // Если в настройках прописаны реальные ключи ЮKassa, отправляем запрос к API ЮKassa
   if (shopId && secretKey && shopId.trim() && secretKey.trim()) {
     try {
       const idempotenceKey = crypto.randomUUID();
       const authHeader = 'Basic ' + Buffer.from(`${shopId.trim()}:${secretKey.trim()}`).toString('base64');
-      
+
       const payload = JSON.stringify({
         amount: {
           value: `${order.total_price}.00`,
@@ -234,11 +258,11 @@ router.post('/:id/pay', async (req, res) => {
         });
       }
     } catch (err) {
-      console.error('YooKassa request exception:', err);
+      console.error('Ошибка обращения к API ЮKassa:', err);
     }
   }
 
-  // Interactive test payment gateway URL
+  // Интерактивный тестовый платежный шлюз
   res.json({
     provider: 'sandbox',
     success: true,
@@ -250,14 +274,15 @@ router.post('/:id/pay', async (req, res) => {
   });
 });
 
-// POST /api/orders/:id/confirm-payment - Real test gateway payment execution
+// POST /api/orders/:id/confirm-payment
+// Подтверждение факта оплаты тестовым шлюзом
 router.post('/:id/confirm-payment', (req, res) => {
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!order) {
     return res.status(404).json({ error: 'Заказ не найден' });
   }
 
-  const { paymentId, provider, cardLast4 } = req.body;
+  const { paymentId, provider } = req.body;
   const pId = paymentId || `YK-TEST-${Date.now()}`;
 
   db.prepare(`
@@ -269,7 +294,7 @@ router.post('/:id/confirm-payment', (req, res) => {
     WHERE id = ?
   `).run(provider || 'yookassa_test', pId, order.id);
 
-  console.log(`[PAYMENT SUCCESS] Order ${order.order_number} marked as PAID. Tx: ${pId}`);
+  console.log(`[PAYMENT SUCCESS] Заказ ${order.order_number} успешно оплачен. Транзакция: ${pId}`);
 
   res.json({
     success: true,
@@ -281,7 +306,8 @@ router.post('/:id/confirm-payment', (req, res) => {
   });
 });
 
-// PATCH /api/orders/:id/status - Update order lifecycle status (Admin only)
+// PATCH /api/orders/:id/status
+// Смена статуса заказа администратором (NEW -> PAID -> IN_PRODUCTION -> DELIVERING -> COMPLETED)
 router.patch('/:id/status', requireAuth, (req, res) => {
   const { status } = req.body;
   const validStatuses = ['NEW', 'PAID', 'IN_PRODUCTION', 'DELIVERING', 'COMPLETED', 'CANCELLED'];
@@ -298,7 +324,8 @@ router.patch('/:id/status', requireAuth, (req, res) => {
   res.json({ success: true, orderId: req.params.id, status });
 });
 
-// GET /api/orders/:id/check-payment - Check status with YooKassa if applicable
+// GET /api/orders/:id/check-payment
+// Опрос статуса оплаты (для вебхуков или проверки возврата из ЮKassa)
 router.get('/:id/check-payment', async (req, res) => {
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!order) {
@@ -334,7 +361,7 @@ router.get('/:id/check-payment', async (req, res) => {
         return res.json({ status: 'PAID' });
       }
     } catch (e) {
-      console.error('Failed to verify with YooKassa:', e);
+      console.error('Ошибка проверки платежа в ЮKassa:', e);
     }
   }
 

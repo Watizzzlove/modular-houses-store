@@ -76,12 +76,22 @@ button, input, select, textarea {
    TOP HEADER & MOBILE BURGER MENU
    ========================================================================== */
 .site-header {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   z-index: 1000;
-  padding: 30px 0;
+  padding: 22px 0;
+  transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease, border-bottom 0.3s ease;
+}
+
+.site-header.is-scrolled {
+  padding: 12px 0;
+  background: rgba(18, 18, 22, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .header-inner {
@@ -174,60 +184,82 @@ button, input, select, textarea {
   transform: translateY(-1px);
 }
 
-/* Modern SVG Cart & Profile Button */
-.btn-profile-pill {
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  color: #ffffff;
-  padding: 10px 18px;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  display: flex;
+/* ==========================================================================
+   MINIMALIST HEADER ACTION ICONS (ACCOUNT & CART WITH EXPAND HOVER)
+   ========================================================================== */
+.header-icon-action {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  background: transparent;
+  border: none;
+  padding: 8px 10px;
+  color: #ffffff;
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 999px;
+  transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease, transform 0.2s ease;
   white-space: nowrap;
 }
-.btn-profile-pill:hover {
-  background: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-1px);
-  color: #ffffff;
+
+.header-icon-action svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: block;
+  stroke: currentColor;
 }
 
-.btn-cart-floating {
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  color: #ffffff;
-  padding: 10px 18px;
-  border-radius: 16px;
+.header-icon-label {
+  display: inline-block;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: background 0.2s ease, transform 0.15s ease;
+  color: #ffffff;
+  margin-left: 0;
+  transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin-left 0.25s ease;
+  pointer-events: none;
 }
 
-.btn-cart-floating:hover {
-  background: rgba(255, 255, 255, 0.25);
+.header-icon-action:hover,
+.header-icon-action:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
   transform: translateY(-1px);
 }
 
-.btn-cart-floating svg {
-  display: block;
+.header-icon-action:hover .header-icon-label,
+.header-icon-action:focus-visible .header-icon-label {
+  max-width: 100px;
+  opacity: 1;
+  margin-left: 8px;
 }
 
-.cart-pill-count {
+/* Badge for Cart Count on Minimalist Icon */
+.header-icon-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
   background: var(--accent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+.header-icon-action:hover .header-icon-badge {
+  transform: scale(1.1);
+}
   color: #fff;
   border-radius: 999px;
   padding: 2px 7px;
@@ -1727,6 +1759,53 @@ button, input, select, textarea {
   font-weight: 800;
   font-size: 14px;
   color: var(--accent);
+}
+
+.cart-item-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.cart-qty-control {
+  display: inline-flex;
+  align-items: center;
+  background: #f1efe9;
+  border-radius: 6px;
+  padding: 2px 4px;
+  gap: 4px;
+}
+
+.cart-qty-btn {
+  background: transparent;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #1c1d1f;
+  border-radius: 4px;
+  transition: background 0.15s ease, color 0.15s ease;
+  user-select: none;
+  line-height: 1;
+}
+
+.cart-qty-btn:hover {
+  background: #dedbd2;
+  color: #000;
+}
+
+.cart-qty-val {
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
+  color: #1c1d1f;
 }
 
 .cart-item-remove {

@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Архитектурная карта проекта | MODUL.HAUS</title>
+  <style>
+    :root {
+      --bg: #0f141c;
+      --card-bg: #18202c;
+      --card-border: #273444;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-orange: #f97316;
+      --accent-blue: #38bdf8;
+      --accent-green: #10b981;
+      --accent-purple: #a855f7;
+      --pill-bg: #1e293b;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      padding-bottom: 80px;
+    }
+
+    header {
+      background: #111827;
+      border-bottom: 1px solid var(--card-border);
+      padding: 18px 32px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
+      background: rgba(249, 115, 22, 0.15);
+      color: var(--accent-orange);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(249, 115, 22, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 6px;
+      background: var(--pill-bg);
+      border: 1px solid var(--card-border);
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      color: #fff;
+      border-color: var(--accent-orange);
+    }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    .hero-summary {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 40px;
+    }
+
+    .hero-summary h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .hero-summary p {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 960px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .spec-item {
+      background: var(--bg);
+      padding: 14px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .spec-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .spec-val {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f8fafc;
+      font-family: var(--font-mono);
+    }
+
+    .level-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 12px;
+    }
+
+    .level-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .level-pill {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    /* Interactive Drill-down Cards */
+    .modules-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .module-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .module-card:hover {
+      border-color: var(--accent-orange);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .module-card.active {
+      border-color: var(--accent-orange);
+      background: #1e2838;
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.4);
+    }
+
+    .module-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .module-card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .module-tag {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      background: var(--pill-bg);
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+    }
+
+    .module-card-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    .drill-down-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-orange);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .diagram-frame-wrapper {
+      background: #090d13;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 36px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+    }
+
+    .diagram-frame-header {
+      background: #111827;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .frame-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cbd5e1;
+      font-family: var(--font-mono);
+    }
+
+    .frame-actions a {
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 10px;
+      background: var(--pill-bg);
+      border-radius: 4px;
+      border: 1px solid var(--card-border);
+    }
+
+    .frame-actions a:hover {
+      color: #fff;
+      border-color: var(--accent-blue);
+    }
+
+    iframe.diagram-embed {
+      width: 100%;
+      height: 640px;
+      border: none;
+      display: block;
+      background: #0f141c;
+    }
+
+    /* Drill-down Detail Panel */
+    .drill-down-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 28px;
+      margin-top: 24px;
+    }
+
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 12px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: var(--pill-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+      border-color: #475569;
+    }
+
+    .tab-btn.active {
+      background: rgba(249, 115, 22, 0.15);
+      border-color: var(--accent-orange);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .tech-specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 13px;
+    }
+
+    .tech-specs-table th, .tech-specs-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .tech-specs-table th {
+      background: #111827;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+
+    .tech-specs-table tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .code-badge {
+      font-family: var(--font-mono);
+      background: #0f141c;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+      font-size: 12px;
+      color: var(--accent-blue);
+    }
+
+    .code-block {
+      background: #090d13;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #cbd5e1;
+      overflow-x: auto;
+      margin: 16px 0;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-title">MODUL.HAUS</div>
+      <div class="brand-badge">Архитектурная карта v2.0</div>
+    </div>
+    <div class="nav-links">
+      <a href="/" class="nav-btn">На главную</a>
+      <a href="/houses.html" class="nav-btn">Каталог домов</a>
+      <a href="/profile.html" class="nav-btn">Личный кабинет</a>
+      <a href="/admin.html" class="nav-btn">Панель админа</a>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="hero-summary">
+      <h1>Архитектурная карта проекта</h1>
+      <p>
+        Двухуровневая интерактивная декомпозиция архитектуры интернет-магазина модульных домов и бань MODUL.HAUS.
+        Верхний уровень описывает общую логическую схему взаимодействия подсистем.
+        В каждый модуль на схеме можно «провалиться» — на втором уровне для каждого сложного блока построена отдельная подробная схема Archify с описанием внутренних функциональных элементов, файлов и потоков данных.
+      </p>
+
+      <div class="specs-grid">
+        <div class="spec-item">
+          <div class="spec-label">Бэкенд стек</div>
+          <div class="spec-val">Node.js 24 + Express 4</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">База данных</div>
+          <div class="spec-val">SQLite 3 (WAL mode)</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">Шлюз оплаты</div>
+          <div class="spec-val">ЮKassa API / Sandbox</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">Почтовый сервис</div>
+          <div class="spec-val">Dual Relay: FormSubmit + SMTP</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- УРОВЕНЬ 1: ОБЩАЯ КАРТА -->
+    <div class="level-heading">
+      <div class="level-title">
+        Уровень 1: Общая логическая карта платформы
+        <span class="level-pill">System Overview</span>
+      </div>
+      <div style="font-size: 13px; color: var(--text-muted);">
+        Интерактивная диаграмма Archify (native render)
+      </div>
+    </div>
+
+    <div class="diagram-frame-wrapper">
+      <div class="diagram-frame-header">
+        <span class="frame-title">docs/archify/level1-system-overview.html</span>
+        <div class="frame-actions">
+          <a href="/archify/level1-system-overview.html" target="_blank">Открыть во весь экран &nearr;</a>
+        </div>
+      </div>
+      <iframe class="diagram-embed" src="/archify/level1-system-overview.html"></iframe>
+    </div>
+
+    <!-- МОДУЛИ ДЛЯ ПРОВАЛИВАНИЯ -->
+    <div class="level-heading">
+      <div class="level-title">
+        Уровень 2: Декомпозиция каждого модуля
+        <span class="level-pill" style="background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border-color: rgba(249, 115, 22, 0.3);">
+          Drill-Down Decomposition
+        </span>
+      </div>
+      <div style="font-size: 13px; color: var(--text-muted);">
+        Кликните по любому модулю, чтобы увидеть его детальную внутреннюю схему Archify
+      </div>
+    </div>
+
+    <div class="modules-cards-grid">
+      <div class="module-card active" onclick="selectTab('frontend')">
+        <div class="module-card-header">
+          <div class="module-card-title">1. Клиентский JS/CSS</div>
+          <span class="module-tag">Frontend Architecture</span>
+        </div>
+        <div class="module-card-desc">
+          Декомпозиция браузерной логики: State Machine конфигуратора, LocalStorage корзина, гейткипер сделки и админка.
+        </div>
+        <div class="drill-down-link">Смотреть архитектуру &rarr;</div>
+      </div>
+
+      <div class="module-card" onclick="selectTab('server')">
+        <div class="module-card-header">
+          <div class="module-card-title">2. Express HTTP Сервер</div>
+          <span class="module-tag">Backend Architecture</span>
+        </div>
+        <div class="module-card-desc">
+          Декомпозиция server.js: парсеры, статическая раздача pages/catalog, JWT Guard и распределение роутеров.
+        </div>
+        <div class="drill-down-link">Смотреть архитектуру &rarr;</div>
+      </div>
+
+      <div class="module-card" onclick="selectTab('configurator')">
+        <div class="module-card-header">
+          <div class="module-card-title">3. Конфигуратор и Каталог</div>
+          <span class="module-tag">Cascade Engine</span>
+        </div>
+        <div class="module-card-desc">
+          3-шаговый каскад подбора фотографий в SQLite, динамический пересчет цен и привязка реальных JPG на диске.
+        </div>
+        <div class="drill-down-link">Смотреть архитектуру &rarr;</div>
+      </div>
+
+      <div class="module-card" onclick="selectTab('auth')">
+        <div class="module-card-header">
+          <div class="module-card-title">4. Модуль Авторизации</div>
+          <span class="module-tag">Security & Sessions</span>
+        </div>
+        <div class="module-card-desc">
+          Гейткипер оформления, сессии памяти 5 мин, доставка 4 цифр через Web Push/SMS, bcrypt и выдача JWT 30д.
+        </div>
+        <div class="drill-down-link">Смотреть архитектуру &rarr;</div>
+      </div>
+
+      <div class="module-card" onclick="selectTab('orders')">
+        <div class="module-card-header">
+          <div class="module-card-title">5. Модуль Заказов и Платежей</div>
+          <span class="module-tag">Transactions</span>
+        </div>
+        <div class="module-card-desc">
+          Фиксация корзины DK-YYYYMMDD, оркестратор ЮKassa / Sandbox, мгновенное подтверждение и цеховой статус.
+        </div>
+        <div class="drill-down-link">Смотреть архитектуру &rarr;</div>
+      </div>
+
+      <div class="module-card" onclick="selectTab('mailer')">
+        <div class="module-card-header">
+          <div class="module-card-title">6. Сервис Уведомлений</div>
+          <span class="module-tag">Dual Relay</span>
+        </div>
+        <div class="module-card-desc">
+          Параллельная доставка: FormSubmit HTTPS Relay + прямой SMTP Mail.ru + локальный журнал data/outbox.log.
+        </div>
+        <div class="drill-down-link">Смотреть архитектуру &rarr;</div>
+      </div>
+
+      <div class="module-card" onclick="selectTab('database')">
+        <div class="module-card-header">
+          <div class="module-card-title">7. База Данных SQLite</div>
+          <span class="module-tag">ERD Schema</span>
+        </div>
+        <div class="module-card-desc">
+          Схема 10 таблиц, внешние ключи, каскадное удаление, автопривязка заказов и быстрый WAL-журнал.
+        </div>
+        <div class="drill-down-link">Смотреть архитектуру &rarr;</div>
+      </div>
+    </div>
+
+    <!-- ДЕТАЛЬНЫЕ ПАНЕЛИ ВТОРОГО УРОВНЯ -->
+    <div class="drill-down-panel" id="drillDownDetails">
+
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="selectTab('frontend')">1. Клиентский JS/CSS</button>
+        <button class="tab-btn" onclick="selectTab('server')">2. Express Сервер</button>
+        <button class="tab-btn" onclick="selectTab('configurator')">3. Конфигуратор и Каталог</button>
+        <button class="tab-btn" onclick="selectTab('auth')">4. Авторизация и Push</button>
+        <button class="tab-btn" onclick="selectTab('orders')">5. Заказы и Платежи</button>
+        <button class="tab-btn" onclick="selectTab('mailer')">6. Сервис Уведомлений</button>
+        <button class="tab-btn" onclick="selectTab('database')">7. Схема БД (ERD)</button>
+      </div>
+
+      <!-- TAB 1: ФРОНТЕНД -->
+      <div class="tab-content active" id="tab-frontend">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: #fff;">Декомпозиция клиентского фронтенда (JS / CSS)</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+          Клиентский интерфейс построен на нативном JavaScript (Vanilla JS ES6+) без тяжелых фреймворков.
+          Логика разделена по изолированным модулям-синглтонам (IIFE), хранящим свое внутреннее состояние.
+        </p>
+
+        <div class="diagram-frame-wrapper">
+          <div class="diagram-frame-header">
+            <span class="frame-title">docs/archify/sub-frontend.html (Architecture)</span>
+            <div class="frame-actions">
+              <a href="/archify/sub-frontend.html" target="_blank">Во весь экран &nearr;</a>
+            </div>
+          </div>
+          <iframe class="diagram-embed" src="/archify/sub-frontend.html"></iframe>
+        </div>
+
+        <table class="tech-specs-table">
+          <thead>
+            <tr>
+              <th>Файл / Модуль</th>
+              <th>Функциональные обязанности</th>
+              <th>Взаимодействие</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>public/js/configurator.js</code></td>
+              <td>State Machine конфигуратора: размер, цвет фасада (бронза, бежевый, графит), терраса/крыльцо, слайдер фото, зум и пересчет сметы.</td>
+              <td>Шлет запросы в <code>/api/configurator</code>, передает готовую сборку в <code>Cart.addItem()</code>.</td>
+            </tr>
+            <tr>
+              <td><code>public/js/cart.js</code></td>
+              <td>Хранилище корзины в <code>localStorage ('doka_cart')</code>, выдвижная шторка Drawer, гейткипер сделки и модалка чекаута.</td>
+              <td>Перехватывает клик «Оформить заказ». Если JWT нет, показывает push-модалку, затем плавно открывает чекаут.</td>
+            </tr>
+            <tr>
+              <td><code>public/js/admin.js</code></td>
+              <td>Клиентское SPA админ-панели: переключение табов (каталог, фото, CMS, настройки, заказы, журнал писем).</td>
+              <td>Отправляет запросы с заголовком <code>Authorization: Bearer &lt;token&gt;</code> в <code>/api/admin/*</code>.</td>
+            </tr>
+            <tr>
+              <td><code>public/js/app.js</code></td>
+              <td>Общие функции страниц: липкая шапка со скроллом, бургер-меню, плавный скролл и системные тосты-уведомления.</td>
+              <td>Инициализируется на всех публичных страницах.</td>
+            </tr>
+            <tr>
+              <td><code>public/css/style.css</code></td>
+              <td>Глобальная дизайн-система: CSS-переменные, адаптивная сетка, типографика, оформление корзины и карточек.</td>
+              <td>Подключается на всех клиентских страницах.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 2: СЕРВЕР -->
+      <div class="tab-content" id="tab-server">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: #fff;">Декомпозиция Express HTTP Сервера (server.js)</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+          Файл <span class="code-badge">server.js</span> является точкой входа Node.js приложения. Он собирает промежуточные обработчики (middleware),
+          настраивает раздачу статических папок по стандартам хостинга и распределяет запросы по изолированным роутерам.
+        </p>
+
+        <div class="diagram-frame-wrapper">
+          <div class="diagram-frame-header">
+            <span class="frame-title">docs/archify/sub-server.html (Architecture)</span>
+            <div class="frame-actions">
+              <a href="/archify/sub-server.html" target="_blank">Во весь экран &nearr;</a>
+            </div>
+          </div>
+          <iframe class="diagram-embed" src="/archify/sub-server.html"></iframe>
+        </div>
+
+        <table class="tech-specs-table">
+          <thead>
+            <tr>
+              <th>Слой / Маршрут</th>
+              <th>Файловый источник</th>
+              <th>Назначение</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/catalog</code>, <code>/houses</code>, <code>/saunas</code></td>
+              <td><code>public/catalog/</code></td>
+              <td>Раздача фотографий каталога. Старые пути <code>/houses/...</code> алиасированы для 100% обратной совместимости.</td>
+            </tr>
+            <tr>
+              <td><code>/pages</code>, <code>/</code>, <code>/*.html</code></td>
+              <td><code>public/pages/</code></td>
+              <td>Раздача чистых HTML-страниц: <code>index.html</code>, <code>houses.html</code>, <code>saunas.html</code>, <code>profile.html</code>, <code>admin.html</code>.</td>
+            </tr>
+            <tr>
+              <td><code>/css</code>, <code>/js</code>, <code>/images</code></td>
+              <td><code>public/</code></td>
+              <td>Клиентские стили, скрипты и статическая графика бренда.</td>
+            </tr>
+            <tr>
+              <td><code>src/middleware/auth.js</code></td>
+              <td>JWT Guard</td>
+              <td><code>requireAuth</code> блокирует неавторизованные запросы в админку, а <code>optionalAuth</code> читает профиль для чекаута.</td>
+            </tr>
+            <tr>
+              <td><code>/api/health</code>, SPA Fallback</td>
+              <td><code>server.js</code></td>
+              <td>Healthcheck для мониторинга и отдача <code>index.html</code> при непредвиденных путях без падения сервера.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 3: КОНФИГУРАТОР -->
+      <div class="tab-content" id="tab-configurator">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: #fff;">Механизм конфигуратора и каскадный подбор фото</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+          Клиентский скрипт <span class="code-badge">public/js/configurator.js</span> работает в связке с роутером <span class="code-badge">src/routes/configurator.js</span>.
+          Поддерживается динамический выбор габаритов, цветов фасада (бронза, бежевый, графит) и пристроев (крыльцо, открытая/закрытая терраса).
+        </p>
+
+        <div class="diagram-frame-wrapper">
+          <div class="diagram-frame-header">
+            <span class="frame-title">docs/archify/sub-configurator.html (Architecture)</span>
+            <div class="frame-actions">
+              <a href="/archify/sub-configurator.html" target="_blank">Во весь экран &nearr;</a>
+            </div>
+          </div>
+          <iframe class="diagram-embed" src="/archify/sub-configurator.html"></iframe>
+        </div>
+
+        <table class="tech-specs-table">
+          <thead>
+            <tr>
+              <th>Этап каскада</th>
+              <th>Условие выборки SQLite</th>
+              <th>Результат</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Точное совпадение</strong></td>
+              <td><code>entrance_kind = ? AND terrace_type = ? AND color = ?</code></td>
+              <td>Если фотографии с данным пристроем физически есть в каталоге, отдаются именно они.</td>
+            </tr>
+            <tr>
+              <td><strong>2. Базовый фолбек</strong></td>
+              <td><code>entrance_kind = 'base' AND color = ?</code></td>
+              <td>Если фото выбранного пристроя нет в папке, показываются качественные базовые фото дома без заглушек.</td>
+            </tr>
+            <tr>
+              <td><strong>3. Гарантия планировки</strong></td>
+              <td><code>kind = 'plan' AND color = ?</code></td>
+              <td>Если в найденном сете нет файла планировки, чертеж автоматически подтягивается из базового набора.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 4: АВТОРИЗАЦИЯ -->
+      <div class="tab-content" id="tab-auth">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: #fff;">Механизм аутентификации и Push-верификации</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+          По бизнес-логике продолжение сделки в корзине доступно только после входа или регистрации.
+          Пользователь вводит номер телефона, получает 4-значный код подтверждения и мгновенно переходит к чекауту.
+        </p>
+
+        <div class="diagram-frame-wrapper">
+          <div class="diagram-frame-header">
+            <span class="frame-title">docs/archify/sub-auth.html (Architecture)</span>
+            <div class="frame-actions">
+              <a href="/archify/sub-auth.html" target="_blank">Во весь экран &nearr;</a>
+            </div>
+          </div>
+          <iframe class="diagram-embed" src="/archify/sub-auth.html"></iframe>
+        </div>
+
+        <table class="tech-specs-table">
+          <thead>
+            <tr>
+              <th>Компонент</th>
+              <th>Путь / Эндпоинт</th>
+              <th>Назначение</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Гейткипер</strong></td>
+              <td><span class="code-badge">public/js/cart.js</span></td>
+              <td>Перехватывает клик «Оформить заказ». Если JWT нет, показывает всплывающее окно входа/регистрации.</td>
+            </tr>
+            <tr>
+              <td><strong>Генерация кода</strong></td>
+              <td><span class="code-badge">POST /api/auth/send-push-code</span></td>
+              <td>Создает 4-значный код, сохраняет в Map сессий на 5 минут и триггерит системный Web Push / SMS.</td>
+            </tr>
+            <tr>
+              <td><strong>Регистрация</strong></td>
+              <td><span class="code-badge">POST /api/auth/register-phone</span></td>
+              <td>Проверяет код, хэширует пароль bcrypt (10 rounds), связывает старые заказы и выдает JWT на 30 дней.</td>
+            </tr>
+            <tr>
+              <td><strong>Бесшовный переход</strong></td>
+              <td><span class="code-badge">Cart.openCheckoutModal()</span></td>
+              <td>Сразу после ответа 201 модалка авторизации закрывается и плавно открывает форму оформления заказа.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 5: ЗАКАЗЫ И ПЛАТЕЖИ -->
+      <div class="tab-content" id="tab-orders">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: #fff;">Жизненный цикл заказов и платежный шлюз</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+          Модуль <span class="code-badge">src/routes/orders.js</span> управляет фиксацией сделок, интеграцией с платежной системой ЮKassa и сменой производственных статусов.
+        </p>
+
+        <div class="diagram-frame-wrapper">
+          <div class="diagram-frame-header">
+            <span class="frame-title">docs/archify/sub-orders.html (Architecture)</span>
+            <div class="frame-actions">
+              <a href="/archify/sub-orders.html" target="_blank">Во весь экран &nearr;</a>
+            </div>
+          </div>
+          <iframe class="diagram-embed" src="/archify/sub-orders.html"></iframe>
+        </div>
+
+        <div class="code-block">
+Статусы заказа:
+NEW           &rarr; Заказ создан, ожидает оплаты (DK-YYYYMMDD-XXXX)
+PAID          &rarr; Оплата успешно проведена через ЮKassa / Sandbox
+IN_PRODUCTION &rarr; Модули дома запущены в сборку на производстве
+DELIVERING    &rarr; Доставка модулей грузовым транспортом и монтаж на участке
+COMPLETED     &rarr; Подписан акт сдачи-приемки, дом введен в эксплуатацию
+CANCELLED     &rarr; Сделка отменена покупателем или администратором
+        </div>
+      </div>
+
+      <!-- TAB 6: ПОЧТОВЫЙ РЕЛЕЙ -->
+      <div class="tab-content" id="tab-mailer">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: #fff;">Почтовый сервис Dual Relay (src/services/mailer.js)</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+          Чтобы гарантировать 100% доставку писем администратору (<span class="code-badge">watislove@internet.ru</span>), сервис использует параллельный двойной релей.
+        </p>
+
+        <div class="diagram-frame-wrapper">
+          <div class="diagram-frame-header">
+            <span class="frame-title">docs/archify/sub-mailer.html (Architecture)</span>
+            <div class="frame-actions">
+              <a href="/archify/sub-mailer.html" target="_blank">Во весь экран &nearr;</a>
+            </div>
+          </div>
+          <iframe class="diagram-embed" src="/archify/sub-mailer.html"></iframe>
+        </div>
+
+        <table class="tech-specs-table">
+          <thead>
+            <tr>
+              <th>Канал доставки</th>
+              <th>Протокол / API</th>
+              <th>Особенности и отказоустойчивость</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. FormSubmit Relay</strong></td>
+              <td><code>POST https://formsubmit.co/ajax/watislove@internet.ru</code></td>
+              <td>Работает через защищенный HTTPS AJAX релей. Доставляет письма без необходимости ввода пароля от почты и исключает блокировки Mail.ru.</td>
+            </tr>
+            <tr>
+              <td><strong>2. Прямой SMTP</strong></td>
+              <td><code>nodemailer: smtp.mail.ru:465 (SSL)</code></td>
+              <td>Активируется, если в панели администратора введен пароль приложения (<span class="code-badge">smtp_pass</span>). Отправляет письмо напрямую от имени домена.</td>
+            </tr>
+            <tr>
+              <td><strong>3. Журнал Outbox</strong></td>
+              <td><code>data/outbox.log</code></td>
+              <td>Каждое отправленное письмо фиксируется в локальном логе и доступно для аудита во вкладке админки «Журнал писем».</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 7: БАЗА ДАННЫХ -->
+      <div class="tab-content" id="tab-database">
+        <h2 style="font-size: 20px; margin-bottom: 12px; color: #fff;">Схема базы данных SQLite (ERD)</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+          Локальный файл <span class="code-badge">data/store.db</span> управляется через библиотеку <span class="code-badge">better-sqlite3</span>.
+          Включен режим журналирования WAL (Write-Ahead Logging) для максимальной производительности чтения.
+        </p>
+
+        <div class="diagram-frame-wrapper">
+          <div class="diagram-frame-header">
+            <span class="frame-title">docs/archify/level2-database.html (ERD)</span>
+            <div class="frame-actions">
+              <a href="/archify/level2-database.html" target="_blank">Во весь экран &nearr;</a>
+            </div>
+          </div>
+          <iframe class="diagram-embed" src="/archify/level2-database.html"></iframe>
+        </div>
+
+        <table class="tech-specs-table">
+          <thead>
+            <tr>
+              <th>Таблица</th>
+              <th>Ключевые поля</th>
+              <th>Связи (Foreign Keys)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>users</code></td>
+              <td>id (PK), email (UK), phone, name, password_hash, role</td>
+              <td>Связана с orders (1 к N)</td>
+            </tr>
+            <tr>
+              <td><code>categories</code></td>
+              <td>id (PK), name, slug (UK), sort_order</td>
+              <td>Связана с series (1 к N)</td>
+            </tr>
+            <tr>
+              <td><code>series</code></td>
+              <td>id (PK), category_id (FK), name, slug (UK), base_price, cover_image</td>
+              <td>categories.id (ON DELETE CASCADE)</td>
+            </tr>
+            <tr>
+              <td><code>configurations</code></td>
+              <td>id (PK), series_id (FK), key, label, width, length, area, price</td>
+              <td>series.id (ON DELETE CASCADE)</td>
+            </tr>
+            <tr>
+              <td><code>media_items</code></td>
+              <td>id (PK), series_id (FK), configuration_id (FK), color, entrance_kind, url</td>
+              <td>series.id, configurations.id</td>
+            </tr>
+            <tr>
+              <td><code>orders</code></td>
+              <td>id (PK), order_number (UK), user_id (FK), total_price, payment_status, status</td>
+              <td>users.id (ON DELETE SET NULL)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    function selectTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.module-card').forEach(card => card.classList.remove('active'));
+
+      const targetBtn = document.querySelector(`.tab-btn[onclick="selectTab('${tabId}')"]`);
+      const targetContent = document.getElementById(`tab-${tabId}`);
+      const targetCard = document.querySelector(`.module-card[onclick="selectTab('${tabId}')"]`);
+
+      if (targetBtn) targetBtn.classList.add('active');
+      if (targetContent) targetContent.classList.add('active');
+      if (targetCard) targetCard.classList.add('active');
+
+      const details = document.getElementById('drillDownDetails');
+      if (details) {
+        details.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  </script>
+</body>
+</html>

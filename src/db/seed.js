@@ -1,12 +1,23 @@
+// Модуль начальной инициализации и сидирования базы данных SQLite.
+// Автоматически создает системных пользователей, базовые категории, серии домов и бань,
+// а также сканирует файловую структуру каталога public/catalog/ и строит индекс комплектаций и фото.
+
 const db = require('./database');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
 
-function runSeed() {
-  console.log('--- Starting Database Seeding ---');
+// Поиск физического пути к папке серии (с поддержкой новой структуры public/catalog/)
+function getCatalogDirPath(category, folder) {
+  const catalogPath = path.join(__dirname, '../../public/catalog', category, folder);
+  if (fs.existsSync(catalogPath)) return catalogPath;
+  return path.join(__dirname, '../../', category, folder);
+}
 
-  // 1. Admin User
+function runSeed() {
+  console.log('Начало инициализации базы данных...');
+
+  // 1. Создание учетной записи администратора
   const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@doka.local');
   if (!existingAdmin) {
     const passwordHash = bcrypt.hashSync('admin123', 10);
@@ -14,10 +25,10 @@ function runSeed() {
       INSERT INTO users (email, password_hash, role)
       VALUES (?, ?, ?)
     `).run('admin@doka.local', passwordHash, 'admin');
-    console.log('[+] Admin created: admin@doka.local / admin123');
+    console.log('[+] Создан админ: admin@doka.local / admin123');
   }
 
-  // Also ensure admin@modul-haus.ru exists
+  // Дублирующий аккаунт админа для продакшена
   const existingModulAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@modul-haus.ru');
   if (!existingModulAdmin) {
     const passwordHash = bcrypt.hashSync('admin123', 10);
@@ -25,7 +36,7 @@ function runSeed() {
       INSERT INTO users (email, password_hash, role)
       VALUES (?, ?, ?)
     `).run('admin@modul-haus.ru', passwordHash, 'admin');
-    console.log('[+] Admin created: admin@modul-haus.ru / admin123');
+    console.log('[+] Создан админ: admin@modul-haus.ru / admin123');
   }
 
   // 2. Categories
@@ -270,7 +281,7 @@ function runSeed() {
     }
   }
 
-  // Index Houses
+  // 4. Индексация фото и комплектаций для домов
   const houseSeriesList = [
     { slug: 'altai', folder: 'altai' },
     { slug: 'taganay', folder: 'taganay' },
@@ -280,13 +291,13 @@ function runSeed() {
   for (const s of houseSeriesList) {
     const sRow = db.prepare('SELECT id FROM series WHERE slug = ?').get(s.slug);
     if (sRow) {
-      const dirPath = path.join(__dirname, '../../houses', s.folder);
+      const dirPath = getCatalogDirPath('houses', s.folder);
       indexSeriesFolder(sRow.id, s.slug, dirPath, '/houses/' + s.folder);
-      console.log(`[+] Indexed house series ${s.slug} from ${dirPath}`);
+      console.log(`[+] Проиндексирована серия домов ${s.slug} из ${dirPath}`);
     }
   }
 
-  // Index Saunas
+  // 4.1. Индексация фото и комплектаций для бань
   const saunaSeriesList = [
     { slug: 'arkaim', folder: 'arkaim' },
     { slug: 'klassika', folder: 'klassika' },
@@ -299,9 +310,9 @@ function runSeed() {
   for (const s of saunaSeriesList) {
     const sRow = db.prepare('SELECT id FROM series WHERE slug = ?').get(s.slug);
     if (sRow) {
-      const dirPath = path.join(__dirname, '../../saunas', s.folder);
+      const dirPath = getCatalogDirPath('saunas', s.folder);
       indexSeriesFolder(sRow.id, s.slug, dirPath, '/saunas/' + s.folder);
-      console.log(`[+] Indexed sauna series ${s.slug} from ${dirPath}`);
+      console.log(`[+] Проиндексирована серия бань ${s.slug} из ${dirPath}`);
     }
   }
 

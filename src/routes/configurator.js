@@ -1,8 +1,16 @@
+// Роутер конфигуратора домов и бань (src/routes/configurator.js).
+// Отвечает за:
+// 1) Выдачу доступных размеров, пристроек (крыльцо/терраса) и цветов для конкретной серии
+// 2) Каскадный подбор реальных фотографий (экстерьер, интерьер, планировки) под выбранные пользователем фильтры:
+//    размер -> цвет -> пристрой (крыльцо / терраса открытая или закрытая).
+// Если точных фото с пристроем нет в каталоге, срабатывает каскадный фолбек на базовые фото проекта.
+
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
 
 // GET /api/configurator/:seriesSlug/options
+// Загрузка всех параметров серии для отрисовки фильтров конфигуратора
 router.get('/:seriesSlug/options', (req, res) => {
   const { seriesSlug } = req.params;
   const series = db.prepare(`
@@ -16,6 +24,7 @@ router.get('/:seriesSlug/options', (req, res) => {
     return res.status(404).json({ error: `Серия '${seriesSlug}' не найдена` });
   }
 
+  // Выбираем размеры дома, отсортированные по площади
   const configurations = db.prepare(`
     SELECT id, key, label, width, length, area, price, folder_name as folder
     FROM configurations
@@ -27,7 +36,7 @@ router.get('/:seriesSlug/options', (req, res) => {
     return res.status(404).json({ error: 'Для данной серии пока нет доступных размеров' });
   }
 
-  // Extensions
+  // Опции расширений (крыльцо, терраса)
   const extensions = db.prepare(`
     SELECT e.id, e.configuration_id, e.kind, e.terrace_type, e.key, e.label, e.price
     FROM extensions e
@@ -35,13 +44,11 @@ router.get('/:seriesSlug/options', (req, res) => {
     WHERE c.series_id = ?
   `).all(series.id);
 
-  // Unique colors in media items
+  // Список уникальных цветов из базы фото
   const colors = db.prepare(`
     SELECT DISTINCT color FROM media_items
     WHERE series_id = ?
   `).all(series.id).map(r => r.color);
-
-  const availableColors = colors.length ? colors : ['bronze', 'beige', 'graphite'];
 
   res.json({
     series: {
@@ -69,6 +76,7 @@ router.get('/:seriesSlug/options', (req, res) => {
 });
 
 // GET /api/configurator/:seriesSlug/photos
+// Умный каскадный подбор слайдов для галереи конфигуратора
 router.get('/:seriesSlug/photos', (req, res) => {
   const { seriesSlug } = req.params;
   const { configKey, color = 'bronze', entrance, terraceType } = req.query;
@@ -78,11 +86,12 @@ router.get('/:seriesSlug/photos', (req, res) => {
     return res.status(404).json({ error: 'Серия не найдена' });
   }
 
-  // Find configuration by key
+  // Находим конкретную конфигурацию по размеру (например, 9x9.5)
   let config = null;
   if (configKey) {
     config = db.prepare('SELECT id FROM configurations WHERE series_id = ? AND key = ?').get(series.id, configKey);
   }
+  // Если не указана, берем первую дефолтную конфигурацию серии
   if (!config) {
     config = db.prepare('SELECT id FROM configurations WHERE series_id = ? ORDER BY sort_order ASC LIMIT 1').get(series.id);
   }
@@ -91,7 +100,7 @@ router.get('/:seriesSlug/photos', (req, res) => {
     return res.json({ slides: [] });
   }
 
-  // 1. Try to find photos matching config + color + entrance
+  // Шаг 1: Пробуем найти фото с точным совпадением пристроя (крыльцо или терраса нужного типа)
   let photos = [];
   if (entrance && entrance !== 'none' && entrance !== 'base') {
     if (terraceType) {
@@ -112,7 +121,7 @@ router.get('/:seriesSlug/photos', (req, res) => {
     }
   }
 
-  // 2. If no entrance-specific photos, fetch base photos for this config and color
+  // Шаг 2: Фолбек - если фото с выбранным пристроем в базе нет, берем базовые фото дома без пристроя
   if (photos.length === 0) {
     photos = db.prepare(`
       SELECT kind, filename as name, url, sort_order as "order"
@@ -122,7 +131,8 @@ router.get('/:seriesSlug/photos', (req, res) => {
     `).all(series.id, config.id, color);
   }
 
-  // 3. If entrance-specific photos exist but contain no plan of their own, attach base plan for the same color
+  // Шаг 3: Проверка планировок - если фото пристроя есть, но нет файла чертежа/планировки,
+  // подтягиваем планировку из базового комплекта этого цвета, чтобы клиент всегда видел планировку
   if (photos.length > 0 && !photos.some(p => p.kind === 'plan')) {
     const basePlanPhotos = db.prepare(`
       SELECT kind, filename as name, url, sort_order as "order"
@@ -138,6 +148,7 @@ router.get('/:seriesSlug/photos', (req, res) => {
     }
   }
 
+  // Преобразуем для фронтенда в массив слайдов
   const slides = photos.map(p => ({
     type: 'image',
     name: p.name,

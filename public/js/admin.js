@@ -1,15 +1,19 @@
-// Admin Panel Logic for Dokabani Store
+// Клиентская логика панели администратора (public/js/admin.js).
+// Обеспечивает:
+// - авторизацию администратора по JWT токену и сохранение сессии в localStorage
+// - переключение между вкладками: каталог, управление фото, контент страниц, настройки ЮKassa/почты, заказы, журнал писем
+// - каскадные фильтры фотогалереи (по категории, серии, размеру и цвету) и загрузку новых снимков
+// - редактирование цен и статусов заказов (NEW, PAID, IN_PRODUCTION, DELIVERING, COMPLETED)
+// - просмотр журнала отправленных email-уведомлений менеджерам
+
 const Admin = (function () {
   let token = localStorage.getItem('doka_admin_token');
   let currentTab = 'catalog';
 
   function init() {
     bindEvents();
-    if (token) {
-      checkAuth();
-    } else {
-      showAuthOverlay(true);
-    }
+    // Always present the login overlay on visit per security & testing requirement
+    showAuthOverlay(true);
   }
 
   function showAuthOverlay(show, isRegister = false) {
@@ -194,49 +198,96 @@ const Admin = (function () {
   }
 
   // --- MEDIA TAB ---
-  async function loadMediaTab() {
-    const seriesSelect = document.querySelector('[data-media-series-select]');
-    const grid = document.querySelector('[data-admin-media-grid]');
-    if (!seriesSelect || !grid) return;
+  let cachedSeriesList = null;
 
-    // Load series into filter if empty
-    if (seriesSelect.children.length <= 1) {
-      const res = await fetch('/api/admin/series', { headers: { 'Authorization': `Bearer ${token}` } });
-      const { series } = await res.json();
-      seriesSelect.innerHTML = series.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-      // Populate upload select too
-      const uploadSeriesSelect = document.querySelector('[data-upload-series-select]');
-      if (uploadSeriesSelect) {
-        uploadSeriesSelect.innerHTML = series.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  async function loadMediaTab() {
+    const catSelect = document.querySelector('[data-media-cat-select]');
+    const seriesSelect = document.querySelector('[data-media-series-select]');
+    const colorSelect = document.querySelector('[data-media-color-select]');
+    const kindSelect = document.querySelector('[data-media-kind-select]');
+    const countBadge = document.querySelector('[data-media-count-badge]');
+    const grid = document.querySelector('[data-admin-media-grid]');
+    if (!grid) return;
+
+    // Load series list once
+    if (!cachedSeriesList) {
+      try {
+        const res = await fetch('/api/admin/series', { headers: { 'Authorization': `Bearer ${token}` } });
+        const { series } = await res.json();
+        cachedSeriesList = series || [];
+
+        // Populate upload select
+        const uploadSeriesSelect = document.querySelector('[data-upload-series-select]');
+        if (uploadSeriesSelect) {
+          uploadSeriesSelect.innerHTML = cachedSeriesList.map(s => 
+            `<option value="${s.id}">[${s.category_name}] ${s.name}</option>`
+          ).join('');
+        }
+      } catch (e) {
+        cachedSeriesList = [];
       }
     }
 
-    const seriesId = seriesSelect.value;
-    grid.innerHTML = '<div style="grid-column: 1/-1; padding: 20px;">Загрузка фото...</div>';
+    // Populate series filter dropdown based on category
+    if (seriesSelect && cachedSeriesList) {
+      const selectedCat = catSelect ? catSelect.value : 'all';
+      const prevVal = seriesSelect.value || 'all';
+
+      let filteredSeries = cachedSeriesList;
+      if (selectedCat !== 'all') {
+        filteredSeries = cachedSeriesList.filter(s => String(s.category_id) === String(selectedCat));
+      }
+
+      seriesSelect.innerHTML = '<option value="all">Все серии</option>' + 
+        filteredSeries.map(s => `<option value="${s.id}">[${s.category_name}] ${s.name}</option>`).join('');
+
+      // Restore previously chosen series if still available
+      if (filteredSeries.some(s => String(s.id) === String(prevVal))) {
+        seriesSelect.value = prevVal;
+      }
+    }
+
+    const catId = catSelect ? catSelect.value : 'all';
+    const seriesId = seriesSelect ? seriesSelect.value : 'all';
+    const color = colorSelect ? colorSelect.value : 'all';
+    const kind = kindSelect ? kindSelect.value : 'all';
+
+    grid.innerHTML = '<div style="grid-column: 1/-1; padding: 24px; text-align: center; color: var(--admin-muted);">Загрузка фото...</div>';
 
     try {
-      const res = await fetch(`/api/admin/media?seriesId=${seriesId}`, {
+      const queryParams = new URLSearchParams({
+        categoryId: catId,
+        seriesId: seriesId,
+        color: color,
+        kind: kind
+      });
+
+      const res = await fetch(`/api/admin/media?${queryParams.toString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const { items } = await res.json();
 
-      if (items.length === 0) {
-        grid.innerHTML = '<div style="grid-column: 1/-1; padding: 20px; color: var(--admin-muted);">В данной серии пока нет загруженных фото</div>';
+      if (countBadge) {
+        countBadge.textContent = `Фото: ${items.length}`;
+      }
+
+      if (!items || items.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; padding: 36px; text-align: center; color: var(--admin-muted); background: #faf9f6; border-radius: 12px; border: 1px dashed var(--admin-line);">По выбранным фильтрам фотографии не найдены</div>';
         return;
       }
 
       grid.innerHTML = items.map(item => `
         <div class="admin-media-item">
           <img src="${item.url}" alt="${item.filename}" loading="lazy" onerror="this.closest('.admin-media-item').style.display='none';">
-          <button class="admin-media-delete-btn" onclick="Admin.deleteMedia(${item.id})" title="Удалить">✕</button>
+          <button type="button" class="admin-media-delete-btn" onclick="Admin.deleteMedia(${item.id})" title="Удалить фотографию">✕</button>
           <div class="admin-media-meta">
-            <strong>${item.config_label || 'Базовый'}</strong> • ${item.color}<br>
-            Ракурс: ${item.kind} (${item.entrance_kind})
+            <strong>${item.series_name}</strong> • ${item.color}<br>
+            Ракурс: ${item.kind} (${item.entrance_kind || 'базовый'})
           </div>
         </div>
       `).join('');
     } catch (e) {
-      grid.innerHTML = `<div style="color:red">Ошибка: ${e.message}</div>`;
+      grid.innerHTML = `<div style="grid-column: 1/-1; color:red; padding: 20px;">Ошибка: ${e.message}</div>`;
     }
   }
 
@@ -561,10 +612,66 @@ const Admin = (function () {
       });
     }
 
-    // Media Series Selector change
+    // Media Filters change bindings
+    const mediaCatSelect = document.querySelector('[data-media-cat-select]');
     const mediaSeriesSelect = document.querySelector('[data-media-series-select]');
+    const mediaColorSelect = document.querySelector('[data-media-color-select]');
+    const mediaKindSelect = document.querySelector('[data-media-kind-select]');
+    const mediaResetBtn = document.querySelector('[data-media-reset-btn]');
+
+    if (mediaCatSelect) {
+      mediaCatSelect.addEventListener('change', () => {
+        if (mediaSeriesSelect) mediaSeriesSelect.value = 'all';
+        loadMediaTab();
+      });
+    }
+
     if (mediaSeriesSelect) {
       mediaSeriesSelect.addEventListener('change', loadMediaTab);
+    }
+
+    if (mediaColorSelect) {
+      mediaColorSelect.addEventListener('change', loadMediaTab);
+    }
+
+    if (mediaKindSelect) {
+      mediaKindSelect.addEventListener('change', loadMediaTab);
+    }
+
+    if (mediaResetBtn) {
+      mediaResetBtn.addEventListener('click', () => {
+        if (mediaCatSelect) mediaCatSelect.value = 'all';
+        if (mediaSeriesSelect) mediaSeriesSelect.value = 'all';
+        if (mediaColorSelect) mediaColorSelect.value = 'all';
+        if (mediaKindSelect) mediaKindSelect.value = 'all';
+        loadMediaTab();
+      });
+    }
+
+    // Modal Close Button
+    const closeConfigsBtn = document.querySelector('[data-close-configs-modal]');
+    if (closeConfigsBtn) {
+      closeConfigsBtn.addEventListener('click', () => {
+        const modal = document.querySelector('[data-configs-modal]');
+        if (modal) modal.style.display = 'none';
+      });
+    }
+
+    // Mobile Sidebar Drawer Toggle
+    const adminSidebar = document.querySelector('.admin-sidebar');
+    if (adminSidebar) {
+      adminSidebar.addEventListener('click', (e) => {
+        if (window.innerWidth <= 850 && !e.target.closest('.admin-nav-item')) {
+          adminSidebar.classList.toggle('is-mobile-open');
+        }
+      });
+      document.querySelectorAll('.admin-nav-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (adminSidebar.classList.contains('is-mobile-open')) {
+            adminSidebar.classList.remove('is-mobile-open');
+          }
+        });
+      });
     }
 
     // Upload Media Form

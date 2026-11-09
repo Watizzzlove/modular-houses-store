@@ -181,7 +181,46 @@ async function runFeatureTests() {
   assert.ok(outboxRes.data.outbox.length > 0, 'Outbox should contain sent email notifications');
   console.log(`✓ Admin outbox retrieved (${outboxRes.data.outbox.length} notifications logged)`);
 
-  console.log('\n🎉 ALL 8 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
+  // 9. Test Phone Push Code Registration Flow
+  console.log('9. Testing phone push code registration flow...');
+  const pushPhone = `+7999888${Math.floor(1000 + Math.random() * 9000)}`;
+  const sendPushRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/auth/send-push-code',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }, {
+    name: 'Илья Тестовый',
+    phone: pushPhone,
+    password: 'secretPassword123',
+    passwordConfirm: 'secretPassword123'
+  });
+  assert.strictEqual(sendPushRes.status, 200);
+  assert.strictEqual(sendPushRes.data.success, true);
+  const receivedCode = sendPushRes.data.devCode;
+  assert.ok(receivedCode, 'Should return push code in test mode');
+  console.log(`✓ Push code generated and dispatched: ${receivedCode}`);
+
+  const registerPushRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/auth/register-phone',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }, {
+    phone: pushPhone,
+    code: receivedCode,
+    password: 'secretPassword123',
+    passwordConfirm: 'secretPassword123',
+    name: 'Илья Тестовый'
+  });
+  assert.strictEqual(registerPushRes.status, 201);
+  assert.ok(registerPushRes.data.token, 'Should receive JWT token on push registration');
+  assert.strictEqual(registerPushRes.data.user.phone, pushPhone);
+  console.log(`✓ User successfully registered via push code verification`);
+
+  console.log('\n🎉 ALL 9 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
 }
 
 runFeatureTests().catch(err => {

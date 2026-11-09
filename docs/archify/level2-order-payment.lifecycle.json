@@ -1,0 +1,49 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Заказы и Платежи — Жизненный цикл сделки (Уровень 2)",
+    "output": "docs/archify/level2-order-payment.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "standard"
+  },
+  "mainPath": ["order_new", "payment_pending", "paid", "in_production", "delivering", "completed"],
+  "states": [
+    { "id": "order_new", "type": "start", "label": "Создан", "sublabel": "Заказ NEW", "tag": "NEW", "step": "01" },
+    { "id": "payment_pending", "type": "waiting", "label": "Оплата", "sublabel": "Шлюз ЮKassa", "tag": "PENDING", "step": "02" },
+    { "id": "paid", "type": "active", "label": "Оплачен", "sublabel": "Оповещение", "tag": "PAID", "step": "03" },
+    { "id": "in_production", "type": "active", "label": "В цеху", "sublabel": "Производство", "tag": "PRODUCTION", "step": "04" },
+    { "id": "delivering", "type": "active", "label": "Доставка", "sublabel": "Монтаж дома", "tag": "DELIVERY", "step": "05" },
+    { "id": "completed", "type": "success", "label": "Завершен", "sublabel": "Акт подписан", "tag": "COMPLETED", "step": "06" },
+    { "id": "cancelled", "type": "failure", "label": "Отменен", "sublabel": "Отказ", "tag": "CANCELLED" }
+  ],
+  "transitions": [
+    { "id": "new-pending", "from": "order_new", "to": "payment_pending", "label": "счет" },
+    { "id": "pending-paid", "from": "payment_pending", "to": "paid", "label": "чек" },
+    { "id": "paid-prod", "from": "paid", "to": "in_production", "label": "цех" },
+    { "id": "prod-delivering", "from": "in_production", "to": "delivering", "label": "выезд" },
+    { "id": "delivering-completed", "from": "delivering", "to": "completed", "label": "акт" },
+    { "id": "pending-cancelled", "from": "payment_pending", "to": "cancelled", "label": "отмена", "variant": "security" },
+    { "id": "new-cancelled", "from": "order_new", "to": "cancelled", "label": "отказ", "variant": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Основной цикл производства",
+      "items": [
+        "Заказ получает уникальный номер DK-YYYYMMDD-XXXX",
+        "После подтверждения транзакции в шлюзе статус мгновенно становится PAID",
+        "Администратор переводит заказ по стадиям: IN_PRODUCTION -> DELIVERING -> COMPLETED"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Синхронизация с личным кабинетом",
+      "items": [
+        "Каждое изменение статуса в админ-панели сразу отображается в личном кабинете покупателя",
+        "Клиент в реальном времени видит текущий этап сборки своего модульного дома или бани"
+      ]
+    }
+  ]
+}

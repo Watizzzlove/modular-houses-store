@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Конфигуратор и Каталог — Архитектура подбора фото и расчета сметы",
+    "subtitle": "Декомпозиция модуля конфигуратора: фильтры, 3-шаговый каскад, расчет цены и физические файлы",
+    "output": "docs/archify/sub-configurator.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    {
+      "id": "client_filter_ui",
+      "type": "frontend",
+      "label": "Селектор Параметров (UI)",
+      "sublabel": "configurator.js (State)",
+      "icon": "frontend",
+      "tag": "Серия, цвет, размер, терраса",
+      "pos": [40, 150],
+      "size": [170, 64]
+    },
+    {
+      "id": "pricing_calculator",
+      "type": "frontend",
+      "label": "Калькулятор Цены",
+      "sublabel": "calculateTotalPrice()",
+      "icon": "frontend",
+      "tag": "База + габарит + терраса",
+      "pos": [40, 320],
+      "size": [170, 64]
+    },
+    {
+      "id": "options_endpoint",
+      "type": "backend",
+      "label": "GET /:series/options",
+      "sublabel": "src/routes/configurator.js",
+      "icon": "backend",
+      "tag": "Доступные размеры и опции",
+      "pos": [270, 150],
+      "size": [170, 64]
+    },
+    {
+      "id": "photos_endpoint",
+      "type": "backend",
+      "label": "GET /:series/photos",
+      "sublabel": "src/routes/configurator.js",
+      "icon": "backend",
+      "tag": "Запрос подборки слайдов",
+      "pos": [270, 320],
+      "size": [170, 64]
+    },
+    {
+      "id": "sql_step1",
+      "type": "database",
+      "label": "1. Точный Пристрой",
+      "sublabel": "SQL: entrance & terrace_type",
+      "icon": "database",
+      "tag": "Снимки крыльца или террасы",
+      "pos": [510, 100],
+      "size": [170, 60]
+    },
+    {
+      "id": "sql_step2",
+      "type": "database",
+      "label": "2. Фолбек на Базу",
+      "sublabel": "SQL: entrance_kind = 'base'",
+      "icon": "database",
+      "tag": "Если фото пристроя нет",
+      "pos": [510, 240],
+      "size": [170, 60]
+    },
+    {
+      "id": "sql_step3",
+      "type": "database",
+      "label": "3. Гарантия Планировки",
+      "sublabel": "SQL: kind = 'plan'",
+      "icon": "database",
+      "tag": "Подтяжка чертежа цвета",
+      "pos": [510, 380],
+      "size": [170, 60]
+    },
+    {
+      "id": "media_items_table",
+      "type": "database",
+      "label": "Таблица media_items",
+      "sublabel": "data/store.db (SQLite)",
+      "icon": "database",
+      "tag": "Индекс фотографий и URL",
+      "pos": [740, 170],
+      "size": [170, 64]
+    },
+    {
+      "id": "catalog_storage",
+      "type": "database",
+      "label": "Каталог Файлов",
+      "sublabel": "public/catalog/houses, saunas",
+      "icon": "database",
+      "tag": "Реальные JPG/PNG на диске",
+      "pos": [740, 320],
+      "size": [170, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Клиентский Интерфейс (UI)",
+      "wraps": ["client_filter_ui", "pricing_calculator"]
+    },
+    {
+      "kind": "region",
+      "label": "Слой API Конфигуратора",
+      "wraps": ["options_endpoint", "photos_endpoint"]
+    },
+    {
+      "kind": "region",
+      "label": "3-Шаговый Каскадный Алгоритм",
+      "wraps": ["sql_step1", "sql_step2", "sql_step3"]
+    },
+    {
+      "kind": "region",
+      "label": "Хранилище Данных и Файлов",
+      "wraps": ["media_items_table", "catalog_storage"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "ui_to_options",
+      "from": "client_filter_ui",
+      "to": "options_endpoint"
+    },
+    {
+      "id": "ui_to_photos",
+      "from": "client_filter_ui",
+      "to": "photos_endpoint",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "ui_to_pricing",
+      "from": "client_filter_ui",
+      "to": "pricing_calculator",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "photos_to_step1",
+      "from": "photos_endpoint",
+      "to": "sql_step1"
+    },
+    {
+      "id": "step1_to_step2",
+      "from": "sql_step1",
+      "to": "sql_step2",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "step2_to_step3",
+      "from": "sql_step2",
+      "to": "sql_step3",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "step1_to_db",
+      "from": "sql_step1",
+      "to": "media_items_table"
+    },
+    {
+      "id": "db_to_storage",
+      "from": "media_items_table",
+      "to": "catalog_storage",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Интеллектуальный каскадный поиск",
+      "items": [
+        "1. Запрос пытается найти точный набор фото: выбранный размер + цвет + пристрой (крыльцо/терраса)",
+        "2. Если отдельной фотосессии с террасой нет, срабатывает фолбек: выдаются базовые фото дома без заглушек",
+        "3. Если в сете отсутствует чертеж планировки, он автоматически подтягивается из базового набора"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Мгновенный пересчет сметы",
+      "items": [
+        "Базовая стоимость проекта берется из series",
+        "Стоимость выбранного габарита дома заложена в название папки (например 9x9.5__p4259000)",
+        "Пристройки добавляют фиксированную стоимость: крыльцо +180 000 ₽, открытая +260 000 ₽, закрытая +420 000 ₽"
+      ]
+    }
+  ]
+}

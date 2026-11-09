@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "diagram_type": "erd",
+  "meta": {
+    "title": "База данных SQLite — Схема сущностей и связей (Уровень 2)",
+    "output": "docs/archify/level2-database.html",
+    "quality_profile": "standard"
+  },
+  "layout": {
+    "mode": "grid",
+    "gapY": 36,
+    "gapX": 64
+  },
+  "entities": [
+    {
+      "id": "users",
+      "label": "users",
+      "tag": "auth",
+      "row": 0,
+      "col": 0,
+      "attributes": [
+        { "name": "id", "type": "integer", "key": "pk" },
+        { "name": "email", "type": "text", "key": "uk" },
+        { "name": "phone", "type": "text" },
+        { "name": "name", "type": "text" },
+        { "name": "password_hash", "type": "text" },
+        { "name": "role", "type": "text" },
+        { "name": "created_at", "type": "datetime" }
+      ]
+    },
+    {
+      "id": "orders",
+      "label": "orders",
+      "tag": "sales",
+      "row": 0,
+      "col": 1,
+      "width": 260,
+      "attributes": [
+        { "name": "id", "type": "integer", "key": "pk" },
+        { "name": "order_number", "type": "text", "key": "uk" },
+        { "name": "user_id", "type": "integer", "key": "fk", "references": "users.id" },
+        { "name": "customer_name", "type": "text" },
+        { "name": "customer_phone", "type": "text" },
+        { "name": "items_json", "type": "text" },
+        { "name": "total_price", "type": "integer" },
+        { "name": "payment_status", "type": "text" },
+        { "name": "status", "type": "text" }
+      ]
+    },
+    {
+      "id": "categories",
+      "label": "categories",
+      "tag": "catalog",
+      "row": 1,
+      "col": 0,
+      "attributes": [
+        { "name": "id", "type": "integer", "key": "pk" },
+        { "name": "name", "type": "text" },
+        { "name": "slug", "type": "text", "key": "uk" },
+        { "name": "sort_order", "type": "integer" }
+      ]
+    },
+    {
+      "id": "series",
+      "label": "series",
+      "tag": "catalog",
+      "row": 1,
+      "col": 1,
+      "attributes": [
+        { "name": "id", "type": "integer", "key": "pk" },
+        { "name": "category_id", "type": "integer", "key": "fk", "references": "categories.id" },
+        { "name": "name", "type": "text" },
+        { "name": "slug", "type": "text", "key": "uk" },
+        { "name": "base_price", "type": "integer" },
+        { "name": "cover_image", "type": "text" },
+        { "name": "is_active", "type": "integer" }
+      ]
+    },
+    {
+      "id": "configurations",
+      "label": "configurations",
+      "tag": "catalog",
+      "row": 1,
+      "col": 2,
+      "attributes": [
+        { "name": "id", "type": "integer", "key": "pk" },
+        { "name": "series_id", "type": "integer", "key": "fk", "references": "series.id" },
+        { "name": "key", "type": "text" },
+        { "name": "label", "type": "text" },
+        { "name": "area", "type": "real" },
+        { "name": "price", "type": "integer" },
+        { "name": "folder_name", "type": "text" }
+      ]
+    },
+    {
+      "id": "media_items",
+      "label": "media_items",
+      "tag": "media",
+      "row": 0,
+      "col": 2,
+      "attributes": [
+        { "name": "id", "type": "integer", "key": "pk" },
+        { "name": "series_id", "type": "integer", "key": "fk", "references": "series.id" },
+        { "name": "configuration_id", "type": "integer", "key": "fk", "references": "configurations.id" },
+        { "name": "color", "type": "text" },
+        { "name": "entrance_kind", "type": "text" },
+        { "name": "terrace_type", "type": "text" },
+        { "name": "kind", "type": "text" },
+        { "name": "url", "type": "text" }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "id": "orders_users",
+      "from": "orders",
+      "to": "users",
+      "label": "принадлежит",
+      "fromCardinality": "many",
+      "fromOptional": true,
+      "toCardinality": "one"
+    },
+    {
+      "id": "series_categories",
+      "from": "series",
+      "to": "categories",
+      "label": "входит в",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "configurations_series",
+      "from": "configurations",
+      "to": "series",
+      "label": "габариты",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "media_series",
+      "from": "media_items",
+      "to": "series",
+      "label": "галерея",
+      "fromCardinality": "many",
+      "toCardinality": "one"
+    },
+    {
+      "id": "media_config",
+      "from": "media_items",
+      "to": "configurations",
+      "label": "размер фото",
+      "fromCardinality": "many",
+      "fromOptional": true,
+      "toCardinality": "one"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Схема каталога и медиатеки",
+      "items": [
+        "categories (1) -> series (N) -> configurations (N): иерархия проектов",
+        "media_items хранит пути к реальным файлам с привязкой к цвету, ракурсу и пристрою"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Связка пользователей и заказов",
+      "items": [
+        "orders.user_id ссылается на users.id (опционально для старых гостевых заказов)",
+        "При регистрации по номеру телефона заказы связываются автоматически"
+      ]
+    }
+  ]
+}

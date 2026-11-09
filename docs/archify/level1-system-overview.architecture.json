@@ -1,0 +1,286 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MODUL.HAUS — Архитектура платформы (Уровень 1)",
+    "subtitle": "Общая логическая карта: клиенты, маршрутизация Express, модули API, база данных SQLite и внешние шлюзы",
+    "output": "docs/archify/level1-system-overview.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    {
+      "id": "client_browser",
+      "type": "external",
+      "label": "Покупатели и Админ",
+      "sublabel": "Браузер / Desktop / Mobile",
+      "icon": "person",
+      "pos": [40, 270],
+      "size": [140, 60]
+    },
+    {
+      "id": "frontend_pages",
+      "type": "frontend",
+      "label": "HTML Страницы",
+      "sublabel": "public/pages/*.html",
+      "icon": "frontend",
+      "tag": "Каталог, Кабинет, Админка",
+      "pos": [240, 160],
+      "size": [160, 64]
+    },
+    {
+      "id": "frontend_scripts",
+      "type": "frontend",
+      "label": "Клиентский JS/CSS",
+      "sublabel": "configurator.js, cart.js, admin.js",
+      "icon": "frontend",
+      "tag": "State Machine, Push-код",
+      "pos": [240, 380],
+      "size": [160, 64]
+    },
+    {
+      "id": "express_server",
+      "type": "backend",
+      "label": "Express HTTP Сервер",
+      "sublabel": "server.js :3030",
+      "icon": "backend",
+      "tag": "Статика, CORS, роутинг",
+      "pos": [460, 270],
+      "size": [160, 64]
+    },
+    {
+      "id": "auth_router",
+      "type": "security",
+      "label": "Модуль Авторизации",
+      "sublabel": "/api/auth (JWT, Push)",
+      "icon": "security",
+      "tag": "30d Token, Phone sessions",
+      "pos": [460, 110],
+      "size": [160, 60]
+    },
+    {
+      "id": "configurator_router",
+      "type": "backend",
+      "label": "Конфигуратор API",
+      "sublabel": "/api/configurator",
+      "icon": "backend",
+      "tag": "Размеры, цены, галерея",
+      "pos": [460, 430],
+      "size": [160, 60]
+    },
+    {
+      "id": "orders_router",
+      "type": "backend",
+      "label": "Модуль Заказов",
+      "sublabel": "/api/orders (чекаут, оплата)",
+      "icon": "backend",
+      "tag": "DK-YYYYMMDD, Статусы",
+      "pos": [680, 270],
+      "size": [160, 64]
+    },
+    {
+      "id": "mailer_service",
+      "type": "messagebus",
+      "label": "Сервис Уведомлений",
+      "sublabel": "src/services/mailer.js",
+      "icon": "messagebus",
+      "tag": "Dual Relay: FormSubmit + SMTP",
+      "pos": [680, 430],
+      "size": [160, 60]
+    },
+    {
+      "id": "sqlite_database",
+      "type": "database",
+      "label": "База SQLite (WAL)",
+      "sublabel": "data/store.db",
+      "icon": "database",
+      "tag": "better-sqlite3, 10 таблиц",
+      "pos": [680, 110],
+      "size": [160, 60]
+    },
+    {
+      "id": "catalog_media",
+      "type": "database",
+      "label": "Каталог Фотографий",
+      "sublabel": "public/catalog/ (houses, saunas)",
+      "icon": "database",
+      "tag": "Реальные фото проектов",
+      "pos": [460, 550],
+      "size": [160, 54]
+    },
+    {
+      "id": "yookassa_gateway",
+      "type": "cloud",
+      "label": "Платежный Шлюз",
+      "sublabel": "ЮKassa API / Sandbox",
+      "icon": "cloud",
+      "tag": "Оплата банковскими картами",
+      "pos": [900, 270],
+      "size": [150, 64]
+    },
+    {
+      "id": "email_external",
+      "type": "external",
+      "label": "Почтовые Сервисы",
+      "sublabel": "watislove@internet.ru",
+      "icon": "external",
+      "tag": "FormSubmit API & SMTP Mail.ru",
+      "pos": [900, 430],
+      "size": [150, 60]
+    },
+    {
+      "id": "sms_push_gateway",
+      "type": "external",
+      "label": "SMS / Web Push",
+      "sublabel": "SMS.ru API & Browser Push",
+      "icon": "external",
+      "tag": "Коды подтверждения",
+      "pos": [900, 110],
+      "size": [150, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Клиентский интерфейс (Frontend)",
+      "wraps": ["frontend_pages", "frontend_scripts"]
+    },
+    {
+      "kind": "region",
+      "label": "Сервер приложений (Node.js & Express API)",
+      "wraps": ["express_server", "auth_router", "configurator_router", "orders_router", "mailer_service"]
+    },
+    {
+      "kind": "region",
+      "label": "Слой хранения данных (Storage Tier)",
+      "wraps": ["sqlite_database", "catalog_media"]
+    },
+    {
+      "kind": "region",
+      "label": "Внешние шлюзы и интеграции",
+      "wraps": ["yookassa_gateway", "email_external", "sms_push_gateway"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "client_to_pages",
+      "from": "client_browser",
+      "to": "frontend_pages",
+      "label": "HTTP",
+      "variant": "emphasis"
+    },
+    {
+      "id": "client_to_scripts",
+      "from": "client_browser",
+      "to": "frontend_scripts"
+    },
+    {
+      "id": "pages_to_server",
+      "from": "frontend_pages",
+      "to": "express_server",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "scripts_to_server",
+      "from": "frontend_scripts",
+      "to": "express_server",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "server_to_auth",
+      "from": "express_server",
+      "to": "auth_router",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "server_to_configurator",
+      "from": "express_server",
+      "to": "configurator_router",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "server_to_orders",
+      "from": "express_server",
+      "to": "orders_router",
+      "label": "Чекаут"
+    },
+    {
+      "id": "auth_to_db",
+      "from": "auth_router",
+      "to": "sqlite_database"
+    },
+    {
+      "id": "auth_to_push",
+      "from": "auth_router",
+      "to": "sms_push_gateway",
+      "fromSide": "top",
+      "toSide": "top",
+      "via": [[540, 50], [975, 50]]
+    },
+    {
+      "id": "configurator_to_media",
+      "from": "configurator_router",
+      "to": "catalog_media",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "orders_to_db",
+      "from": "orders_router",
+      "to": "sqlite_database",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "orders_to_yookassa",
+      "from": "orders_router",
+      "to": "yookassa_gateway",
+      "label": "Платеж"
+    },
+    {
+      "id": "orders_to_mailer",
+      "from": "orders_router",
+      "to": "mailer_service",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "mailer_to_external",
+      "from": "mailer_service",
+      "to": "email_external",
+      "label": "Dual Relay"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend и маршрутизация",
+      "items": [
+        "Страницы лежат в public/pages, медиакаталог — в public/catalog",
+        "Клиентские скрипты управляют интерактивным состоянием корзины и конфигуратора",
+        "Бесшовная маршрутизация Express отдает как чистые URL (/houses), так и файлы (.html)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Хранение и ядро API",
+      "items": [
+        "SQLite с режимом WAL обеспечивает параллельное чтение без задержек",
+        "Авторизация клиентов по номеру телефона с push-кодом и JWT сессией на 30 дней",
+        "Каскадный подбор фотографий находит идеальный ракурс или выдает базовый комплект"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Внешние шлюзы",
+      "items": [
+        "Тестовый платежный шлюз ЮKassa с мгновенным подтверждением и статусом PAID",
+        "Двойной почтовый релей: FormSubmit HTTP API (гарантия доставки) + прямой SMTP",
+        "SMS.ru и Web Push для надежной доставки одноразовых кодов авторизации"
+      ]
+    }
+  ]
+}

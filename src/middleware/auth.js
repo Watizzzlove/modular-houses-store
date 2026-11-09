@@ -1,7 +1,12 @@
+// Middleware авторизации по JWT-токену (JSON Web Token).
+// Проверяет заголовок Authorization: Bearer <token>.
+// Используется для защиты роутов админки и личного кабинета покупателя.
+
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'doka-secret-key-magistr-2026';
 
+// Строгая проверка: если токена нет или он протух, отдаем 401
 function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,6 +23,7 @@ function requireAuth(req, res, next) {
   }
 }
 
+// Мягкая проверка: если токен есть, парсим пользователя, а если нет - продолжаем как гость
 function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

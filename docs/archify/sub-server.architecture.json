@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Express HTTP Сервер и Роутинг — Декомпозиция ядра бэкенда",
+    "subtitle": "Архитектура server.js: парсеры, статическая раздача, JWT guard и маршрутизаторы API",
+    "output": "docs/archify/sub-server.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    {
+      "id": "entry_point",
+      "type": "backend",
+      "label": "Точка Входа Node.js",
+      "sublabel": "server.js :3030",
+      "icon": "backend",
+      "tag": "dotenv, listen, seed auto-init",
+      "pos": [40, 100],
+      "size": [170, 64]
+    },
+    {
+      "id": "middleware_cors_json",
+      "type": "backend",
+      "label": "Глобальные Middleware",
+      "sublabel": "CORS, express.json()",
+      "icon": "backend",
+      "tag": "Парсинг JSON, urlencoded",
+      "pos": [40, 250],
+      "size": [170, 64]
+    },
+    {
+      "id": "spa_fallback",
+      "type": "backend",
+      "label": "Фолбек и Healthcheck",
+      "sublabel": "/api/health, 404 handler",
+      "icon": "backend",
+      "tag": "Отдача index.html при перезагрузке",
+      "pos": [40, 400],
+      "size": [170, 64]
+    },
+    {
+      "id": "static_router",
+      "type": "frontend",
+      "label": "Статический Роутер",
+      "sublabel": "public/pages, catalog, css",
+      "icon": "frontend",
+      "tag": "Чистые URL и алиасы фото",
+      "pos": [270, 100],
+      "size": [170, 64]
+    },
+    {
+      "id": "auth_guard",
+      "type": "security",
+      "label": "JWT Guard Middleware",
+      "sublabel": "src/middleware/auth.js",
+      "icon": "security",
+      "tag": "requireAuth & optionalAuth",
+      "pos": [270, 250],
+      "size": [170, 64]
+    },
+    {
+      "id": "routes_catalog",
+      "type": "backend",
+      "label": "Каталог Роутер",
+      "sublabel": "src/routes/catalog.js",
+      "icon": "backend",
+      "tag": "/api/catalog (серии, пресеты)",
+      "pos": [510, 100],
+      "size": [170, 60]
+    },
+    {
+      "id": "routes_configurator",
+      "type": "backend",
+      "label": "Конфигуратор Роутер",
+      "sublabel": "src/routes/configurator.js",
+      "icon": "backend",
+      "tag": "/api/configurator (габариты, фото)",
+      "pos": [510, 250],
+      "size": [170, 60]
+    },
+    {
+      "id": "routes_auth",
+      "type": "security",
+      "label": "Аутентификация Роутер",
+      "sublabel": "src/routes/auth.js",
+      "icon": "security",
+      "tag": "/api/auth (push-коды, login)",
+      "pos": [510, 400],
+      "size": [170, 60]
+    },
+    {
+      "id": "routes_orders",
+      "type": "backend",
+      "label": "Заказы Роутер",
+      "sublabel": "src/routes/orders.js",
+      "icon": "backend",
+      "tag": "/api/orders (чекаут, оплата)",
+      "pos": [740, 100],
+      "size": [170, 60]
+    },
+    {
+      "id": "routes_admin",
+      "type": "backend",
+      "label": "Админ Роутер",
+      "sublabel": "src/routes/admin.js",
+      "icon": "backend",
+      "tag": "/api/admin (JWT protected)",
+      "pos": [740, 250],
+      "size": [170, 60]
+    },
+    {
+      "id": "routes_media",
+      "type": "database",
+      "label": "Медиа Роутер",
+      "sublabel": "src/routes/media.js",
+      "icon": "database",
+      "tag": "/api/media (просмотр диска)",
+      "pos": [740, 400],
+      "size": [170, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Серверное Ядро и Middleware",
+      "wraps": ["entry_point", "middleware_cors_json", "spa_fallback"]
+    },
+    {
+      "kind": "region",
+      "label": "Слой Доставки Статики и Защиты",
+      "wraps": ["static_router", "auth_guard"]
+    },
+    {
+      "kind": "region",
+      "label": "Публичные API Маршрутизаторы",
+      "wraps": ["routes_catalog", "routes_configurator", "routes_auth"]
+    },
+    {
+      "kind": "region",
+      "label": "Бизнес-Транзакции и Управление",
+      "wraps": ["routes_orders", "routes_admin", "routes_media"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "entry_to_mw",
+      "from": "entry_point",
+      "to": "middleware_cors_json",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "entry_to_static",
+      "from": "entry_point",
+      "to": "static_router"
+    },
+    {
+      "id": "mw_to_guard",
+      "from": "middleware_cors_json",
+      "to": "auth_guard"
+    },
+    {
+      "id": "mw_to_fallback",
+      "from": "middleware_cors_json",
+      "to": "spa_fallback",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "guard_to_auth",
+      "from": "auth_guard",
+      "to": "routes_auth"
+    },
+    {
+      "id": "guard_to_orders",
+      "from": "auth_guard",
+      "to": "routes_orders",
+      "label": "optionalAuth"
+    },
+    {
+      "id": "guard_to_admin",
+      "from": "auth_guard",
+      "to": "routes_admin"
+    },
+    {
+      "id": "static_to_catalog",
+      "from": "static_router",
+      "to": "routes_catalog"
+    },
+    {
+      "id": "admin_to_media",
+      "from": "routes_admin",
+      "to": "routes_media",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Изоляция и слои ответственности",
+      "items": [
+        "server.js выполняет сборку роутеров и настраивает раздачу статики из public/",
+        "Каждый роутер изолирован в своей области (/api/catalog, /api/orders, /api/admin)",
+        "Алиасы /houses и /saunas обеспечивают полную совместимость со старыми путями каталога"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Безопасность и JWT Guard",
+      "items": [
+        "requireAuth блокирует доступ к /api/admin без валидного Bearer токена (401)",
+        "optionalAuth мягко считывает токен в /api/orders для автоматической привязки заказа к профилю",
+        "Все входящие пути в /api/media валидируются регулярным выражением против атак path traversal"
+      ]
+    }
+  ]
+}
