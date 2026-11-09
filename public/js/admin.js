@@ -465,6 +465,67 @@ const Admin = (function () {
     }
   }
 
+  // Проверка отправки тестового сообщения в Telegram
+  async function testTelegramSettings() {
+    const form = document.querySelector('[data-admin-settings-form]');
+    const statusEl = document.getElementById('adminTelegramTestMsg');
+    const testBtn = document.getElementById('btnAdminTestTelegram');
+    if (!form || !statusEl || !testBtn) return;
+
+    const data = {};
+    Array.from(form.elements).forEach(el => {
+      if (el.name) data[el.name] = el.value;
+    });
+
+    if (!data.telegram_bot_token || !data.telegram_chat_id) {
+      statusEl.style.display = 'block';
+      statusEl.style.background = '#fde8e8';
+      statusEl.style.color = '#9b1c1c';
+      statusEl.style.border = '1px solid #f98080';
+      statusEl.innerHTML = '<strong>✕ Ошибка:</strong> Заполните Telegram Bot Token и Chat ID';
+      return;
+    }
+
+    testBtn.disabled = true;
+    testBtn.textContent = 'Отправка в Telegram...';
+    statusEl.style.display = 'block';
+    statusEl.style.background = '#f3f4f6';
+    statusEl.style.color = '#374151';
+    statusEl.style.border = '1px solid #d1d5db';
+    statusEl.textContent = 'Отправка тестового сообщения через Telegram Bot API...';
+
+    try {
+      const res = await fetch('/api/admin/settings/test-telegram', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        statusEl.style.background = '#def7ec';
+        statusEl.style.color = '#03543f';
+        statusEl.style.border = '1px solid #31c48d';
+        statusEl.innerHTML = '<strong>✓ Успешно!</strong> ' + (resData.message || 'Тестовое уведомление доставлено в Telegram');
+      } else {
+        statusEl.style.background = '#fde8e8';
+        statusEl.style.color = '#9b1c1c';
+        statusEl.style.border = '1px solid #f98080';
+        statusEl.innerHTML = '<strong>✕ Ошибка Telegram:</strong> ' + (resData.error || 'Не удалось отправить сообщение');
+      }
+    } catch (err) {
+      statusEl.style.background = '#fde8e8';
+      statusEl.style.color = '#9b1c1c';
+      statusEl.style.border = '1px solid #f98080';
+      statusEl.innerHTML = '<strong>✕ Ошибка связи:</strong> ' + err.message;
+    } finally {
+      testBtn.disabled = false;
+      testBtn.textContent = 'Проверить отправку в Telegram';
+    }
+  }
+
   // --- ORDERS TAB ---
   async function loadOrdersTab() {
     const tbody = document.querySelector('[data-admin-orders-list]');
@@ -786,6 +847,15 @@ const Admin = (function () {
       btnTestMail.addEventListener('click', (e) => {
         e.preventDefault();
         testMailSettings();
+      });
+    }
+
+    // Test Telegram Button
+    const btnTestTelegram = document.getElementById('btnAdminTestTelegram');
+    if (btnTestTelegram) {
+      btnTestTelegram.addEventListener('click', (e) => {
+        e.preventDefault();
+        testTelegramSettings();
       });
     }
 

@@ -413,6 +413,26 @@
             <div id="adminMailTestMsg" style="margin-top: 10px; font-size: 13px; line-height: 1.5; display: none; padding: 10px 14px; border-radius: 6px;"></div>
 
             <div style="border-bottom: 1px solid var(--admin-line); padding-bottom: 12px; margin-top: 16px; margin-bottom: 4px;">
+              <strong style="font-size: 14px; color: #111;">Telegram Bot (Мгновенные уведомления о заказах и заявках)</strong>
+            </div>
+            <div class="form-group">
+              <label>Telegram Bot Token</label>
+              <input type="password" name="telegram_bot_token" class="form-input" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+              <small style="color: #6a6864; font-size: 12px; display: block; margin-top: 4px;">Токен вашего Telegram-бота от @BotFather</small>
+            </div>
+            <div class="form-group">
+              <label>Telegram Chat ID (канал или ID пользователя)</label>
+              <input type="text" name="telegram_chat_id" class="form-input" placeholder="-100123456789 или ваш user_id">
+              <small style="color: #6a6864; font-size: 12px; display: block; margin-top: 4px;">ID чата, куда бот будет присылать уведомления</small>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center; margin-top: 10px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary" id="btnAdminTestTelegram" style="padding: 10px 18px; font-size: 13px;">
+                Проверить отправку в Telegram
+              </button>
+            </div>
+            <div id="adminTelegramTestMsg" style="margin-top: 10px; font-size: 13px; line-height: 1.5; display: none; padding: 10px 14px; border-radius: 6px;"></div>
+
+            <div style="border-bottom: 1px solid var(--admin-line); padding-bottom: 12px; margin-top: 16px; margin-bottom: 4px;">
               <strong style="font-size: 14px; color: #111;">Push / SMS шлюз (SMS.ru / Firebase)</strong>
             </div>
             <div class="form-group">

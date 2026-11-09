@@ -16,6 +16,7 @@ const fs = require('fs');
 const db = require('../db/database');
 const { requireAuth } = require('../middleware/auth');
 const mailer = require('../services/mailer');
+const telegram = require('../services/telegram');
 
 // Все эндпоинты админки требуют авторизации
 router.use(requireAuth);
@@ -292,6 +293,24 @@ router.post('/settings/test-mail', async (req, res) => {
     res.json({
       success: true,
       message: result.message || `Тестовое письмо успешно отправлено на ${result.to}!`,
+      messageId: result.messageId
+    });
+  } else {
+    res.status(400).json({
+      success: false,
+      error: result.error
+    });
+  }
+});
+
+// POST /api/admin/settings/test-telegram
+// Проверка подключения и отправка тестового сообщения в Telegram
+router.post('/settings/test-telegram', async (req, res) => {
+  const result = await telegram.testTelegramConnection(req.body);
+  if (result.success) {
+    res.json({
+      success: true,
+      message: result.message || 'Тестовое сообщение успешно отправлено в Telegram!',
       messageId: result.messageId
     });
   } else {

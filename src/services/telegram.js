@@ -120,9 +120,65 @@ async function sendLeadNotification(lead) {
   return await sendMessage(message);
 }
 
+// Проверка подключения и отправка тестового сообщения в Telegram
+async function testTelegramConnection(overrideSettings = {}) {
+  const base = getTelegramSettings();
+  const botToken = (overrideSettings.telegram_bot_token || overrideSettings.botToken || base.botToken || '').trim();
+  const chatId = (overrideSettings.telegram_chat_id || overrideSettings.chatId || base.chatId || '').trim();
+
+  if (!botToken || !chatId) {
+    return { success: false, error: 'Укажите Telegram Bot Token и Chat ID' };
+  }
+
+  const payload = JSON.stringify({
+    chat_id: chatId,
+    text: `<b>MODUL.HAUS</b>: Тестовое уведомление из панели управления!\nИнтеграция с Telegram успешно настроена. Время: ${new Date().toLocaleTimeString('ru-RU')}`,
+    parse_mode: 'HTML'
+  });
+
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      port: 443,
+      path: `/bot${botToken}/sendMessage`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      },
+      timeout: 6000
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.ok) {
+            resolve({ success: true, message: 'Тестовое сообщение успешно отправлено в Telegram!', messageId: parsed.result.message_id });
+          } else {
+            resolve({ success: false, error: parsed.description || 'Ошибка Telegram API' });
+          }
+        } catch (e) {
+          resolve({ success: false, error: 'Некорректный ответ от Telegram API' });
+        }
+      });
+    });
+
+    req.on('error', (err) => resolve({ success: false, error: err.message }));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({ success: false, error: 'Таймаут соединения с Telegram API' });
+    });
+
+    req.write(payload);
+    req.end();
+  });
+}
+
 module.exports = {
   sendMessage,
   sendOrderNotification,
   sendLeadNotification,
-  getTelegramSettings
+  getTelegramSettings,
+  testTelegramConnection
 };

@@ -254,7 +254,25 @@ async function runFeatureTests() {
   assert.ok(tgResult.skipped || tgResult.success, 'Telegram should gracefully handle unconfigured or configured state');
   console.log(`✓ Telegram service handled gracefully (skipped: ${tgResult.skipped || false})`);
 
-  console.log('\n🎉 ALL 11 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
+  console.log('12. Testing Telegram settings endpoint validation...');
+  const tgValidationRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/admin/settings/test-telegram',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${adminToken}`
+    }
+  }, {
+    telegram_bot_token: '',
+    telegram_chat_id: ''
+  });
+  assert.strictEqual(tgValidationRes.status, 400);
+  assert.strictEqual(tgValidationRes.data.success, false);
+  console.log('✓ Telegram endpoint correctly validates required bot token and chat ID');
+
+  console.log('\n🎉 ALL 12 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
 }
 
 runFeatureTests().catch(err => {
