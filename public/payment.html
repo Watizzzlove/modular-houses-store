@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оплата заказа — ЮKassa (Тестовый платежный шлюз) | MODUL.HAUS</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background: #f4f3f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: var(--font-body);
+      color: #1c1d1f;
+      margin: 0;
+    }
+    .payment-header {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e4de;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .payment-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 18px;
+    }
+    .payment-badge-test {
+      background: #fff3cd;
+      color: #856404;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #ffeeba;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .payment-wrapper {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 28px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    @media (max-width: 768px) {
+      .payment-wrapper {
+        grid-template-columns: 1fr;
+        margin: 20px auto;
+      }
+    }
+    .payment-card-panel {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: 1px solid #eae8e1;
+    }
+    .payment-order-summary {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: 1px solid #eae8e1;
+      height: fit-content;
+    }
+    .payment-amount-display {
+      font-size: 32px;
+      font-weight: 850;
+      color: #1c1d1f;
+      margin: 12px 0 24px;
+      font-family: var(--font-heading);
+    }
+    .test-card-fill-btn {
+      background: #f7f6f2;
+      border: 1px dashed #c8c5bc;
+      color: #555;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 24px;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .test-card-fill-btn:hover {
+      background: #eeebe3;
+      border-color: var(--accent);
+      color: #111;
+    }
+    .fake-card-mockup {
+      background: linear-gradient(135deg, #2b303a 0%, #17191d 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.2);
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .fake-card-chip {
+      width: 44px;
+      height: 32px;
+      background: linear-gradient(135deg, #ffd700, #d4af37);
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    .fake-card-input-row {
+      margin-bottom: 16px;
+    }
+    .fake-card-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 4px;
+      display: block;
+    }
+    .fake-card-input {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 16px;
+      font-family: monospace;
+      letter-spacing: 2px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .fake-card-input:focus {
+      border-color: var(--accent);
+      background: rgba(255,255,255,0.2);
+    }
+    .fake-card-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .btn-pay-submit {
+      width: 100%;
+      background: #0070ba;
+      background: linear-gradient(180deg, #008037 0%, #00682c 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,104,44,0.35);
+      transition: all 0.2s;
+    }
+    .btn-pay-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(0,104,44,0.45);
+    }
+    .btn-pay-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .order-items-mini {
+      font-size: 13px;
+      margin: 16px 0;
+      border-top: 1px solid #eee;
+      padding-top: 14px;
+    }
+    .order-item-mini-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    /* 3D-SECURE MODAL */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-backdrop.is-open {
+      display: flex;
+    }
+    .secure-modal {
+      background: #ffffff;
+      border-radius: 20px;
+      max-width: 420px;
+      width: 90%;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      animation: modalPop 0.3s cubic-bezier(0.16,1,0.3,1);
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .secure-bank-logo {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0c2340;
+      margin-bottom: 8px;
+    }
+    .secure-sms-input {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 12px;
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px solid #00682c;
+      width: 180px;
+      margin: 20px auto;
+      outline: none;
+      font-family: monospace;
+    }
+    .secure-hint {
+      font-size: 13px;
+      color: #666;
+      background: #f4f6f8;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <header class="payment-header">
+    <div class="payment-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+        <line x1="2" y1="10" x2="22" y2="10"></line>
+      </svg>
+      <span>ЮKassa</span>
+      <span class="payment-badge-test">Тестовый шлюз</span>
+    </div>
+    <div style="font-size: 13px; color: #666;">
+      Получатель: <strong>MODUL.HAUS</strong>
+    </div>
+  </header>
+
+  <main class="payment-wrapper">
+    <!-- LEFT: CARD FORM -->
+    <section class="payment-card-panel">
+      <h2 style="margin: 0 0 6px; font-size: 20px;">Оплата банковской картой</h2>
+      <p style="font-size: 14px; color: #666; margin: 0 0 20px;">
+        Безопасное проведение тестовой транзакции через официальный шлюз
+      </p>
+
+      <button type="button" class="test-card-fill-btn" id="fillTestCardBtn">
+        <span>💳 Заполнить данными тестовой карты</span>
+        <span style="font-size: 11px; background: #e2dfd5; padding: 3px 8px; border-radius: 6px;">1111 ... 1026</span>
+      </button>
+
+      <form id="paymentForm">
+        <div class="fake-card-mockup">
+          <div class="fake-card-chip"></div>
+
+          <div class="fake-card-input-row">
+            <label class="fake-card-label">Номер карты</label>
+            <input type="text" id="cardNumber" class="fake-card-input" placeholder="0000 0000 0000 0000" maxlength="19" required>
+          </div>
+
+          <div class="fake-card-cols">
+            <div>
+              <label class="fake-card-label">Срок действия</label>
+              <input type="text" id="cardExpiry" class="fake-card-input" placeholder="MM/YY" maxlength="5" required>
+            </div>
+            <div>
+              <label class="fake-card-label">CVC / CVV</label>
+              <input type="password" id="cardCvc" class="fake-card-input" placeholder="•••" maxlength="3" required>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-pay-submit" id="submitPayBtn">
+          Оплатить <span id="payBtnAmount">0 ₽</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- RIGHT: ORDER SUMMARY -->
+    <aside class="payment-order-summary">
+      <h3 style="margin: 0 0 4px; font-size: 16px; color: #666;">Сумма к оплате</h3>
+      <div class="payment-amount-display" id="summaryTotal">0 ₽</div>
+
+      <div style="font-size: 13px; color: #444;">
+        <div>Заказ: <strong id="summaryOrderNumber">—</strong></div>
+        <div style="margin-top: 4px;">Клиент: <span id="summaryCustomer">—</span></div>
+      </div>
+
+      <div class="order-items-mini" id="summaryItems">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div style="font-size: 12px; color: #888; line-height: 1.5; margin-top: 20px;">
+        🔒 Соединение защищено 256-битным шифрованием. Данные карты не сохраняются на сервере.
+      </div>
+    </aside>
+  </main>
+
+  <!-- 3D SECURE MODAL -->
+  <div class="modal-backdrop" id="secureModal">
+    <div class="secure-modal">
+      <div class="secure-bank-logo">Банк-эмитент</div>
+      <p style="font-size: 13px; color: #555; margin: 0 0 16px;">
+        Подтверждение операции (3D-Secure)
+      </p>
+
+      <div class="secure-hint">
+        Для подтверждения тестового платежа введите код из SMS: <strong>1111</strong>
+      </div>
+
+      <input type="text" id="smsCodeInput" class="secure-sms-input" maxlength="4" placeholder="••••" autofocus>
+
+      <button type="button" class="btn-pay-submit" id="confirmSmsBtn" style="padding: 12px;">
+        Подтвердить оплату
+      </button>
+
+      <div id="smsError" style="color: #e53e3e; font-size: 13px; margin-top: 10px; display: none;">
+        Неверный код. Введите 1111
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId');
+
+    let currentOrder = null;
+
+    async function loadOrder() {
+      if (!orderId) {
+        alert('Номер заказа не указан');
+        window.location.href = '/';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/orders/${orderId}`);
+        if (!res.ok) throw new Error('Заказ не найден');
+        currentOrder = await res.json();
+
+        const formatted = new Intl.NumberFormat('ru-RU').format(currentOrder.total_price) + ' ₽';
+        document.getElementById('summaryTotal').textContent = formatted;
+        document.getElementById('payBtnAmount').textContent = formatted;
+        document.getElementById('summaryOrderNumber').textContent = currentOrder.order_number;
+        document.getElementById('summaryCustomer').textContent = currentOrder.customer_name;
+
+        const itemsEl = document.getElementById('summaryItems');
+        if (currentOrder.items && currentOrder.items.length) {
+          itemsEl.innerHTML = currentOrder.items.map(it => `
+            <div class="order-item-mini-row">
+              <span>${it.title} × ${it.quantity || 1}</span>
+              <strong>${new Intl.NumberFormat('ru-RU').format(it.price * (it.quantity || 1))} ₽</strong>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        alert(err.message);
+        window.location.href = '/';
+      }
+    }
+
+    // Quick auto-fill test card
+    document.getElementById('fillTestCardBtn').addEventListener('click', () => {
+      document.getElementById('cardNumber').value = '1111 1111 1111 1026';
+      document.getElementById('cardExpiry').value = '12/28';
+      document.getElementById('cardCvc').value = '123';
+    });
+
+    // Formatting card number
+    document.getElementById('cardNumber').addEventListener('input', function(e) {
+      let v = this.value.replace(/\D/g, '').substring(0, 16);
+      this.value = v.replace(/(.{4})/g, '$1 ').trim();
+    });
+
+    // Formatting expiry
+    document.getElementById('cardExpiry').addEventListener('input', function(e) {
+      let v = this.value.replace(/\D/g, '').substring(0, 4);
+      if (v.length >= 3) {
+        this.value = v.substring(0, 2) + '/' + v.substring(2);
+      } else {
+        this.value = v;
+      }
+    });
+
+    // Form submit -> open 3D Secure modal
+    document.getElementById('paymentForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const num = document.getElementById('cardNumber').value.replace(/\s/g, '');
+      if (num.length < 16) {
+        alert('Введите полный номер карты (16 цифр)');
+        return;
+      }
+      document.getElementById('secureModal').classList.add('is-open');
+      const smsInp = document.getElementById('smsCodeInput');
+      smsInp.value = '';
+      setTimeout(() => smsInp.focus(), 100);
+    });
+
+    // Confirm SMS 3D Secure
+    document.getElementById('confirmSmsBtn').addEventListener('click', processConfirmation);
+    document.getElementById('smsCodeInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') processConfirmation();
+    });
+
+    async function processConfirmation() {
+      const code = document.getElementById('smsCodeInput').value.trim();
+      const errEl = document.getElementById('smsError');
+      const btn = document.getElementById('confirmSmsBtn');
+
+      if (code !== '1111') {
+        errEl.style.display = 'block';
+        return;
+      }
+
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Обработка транзакции...';
+
+      try {
+        const res = await fetch(`/api/orders/${orderId}/confirm-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentId: 'YOO-TEST-' + Math.floor(100000 + Math.random() * 900000),
+            provider: 'yookassa_sandbox',
+            cardLast4: '1026'
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          // Redirect to success or profile
+          window.location.href = `/order-success.html?orderId=${orderId}`;
+        } else {
+          alert(data.error || 'Ошибка при проведении платежа');
+          btn.disabled = false;
+          btn.textContent = 'Подтвердить оплату';
+        }
+      } catch (err) {
+        alert('Ошибка связи с платежным сервером');
+        btn.disabled = false;
+        btn.textContent = 'Подтвердить оплату';
+      }
+    }
+
+    loadOrder();
+  </script>
+</body>
+</html>

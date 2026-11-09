@@ -19,3 +19,8 @@ Thumbs.db
 # Cache & artifacts
 .cache/
 tmp/
+
+# SQLite WAL & temporary files
+*.db-wal
+*.db-shm
+*.db-journal

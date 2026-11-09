@@ -117,4 +117,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // 5. RUSSIAN PHONE MASK & REGEX VALIDATION
+  const PHONE_REGEX = /^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/;
+
+  function applyPhoneMask(input) {
+    input.addEventListener('input', function() {
+      let v = this.value.replace(/\D/g, '');
+      if (v.startsWith('7') || v.startsWith('8')) v = v.substring(1);
+      v = v.substring(0, 10);
+      let formatted = '+7 ';
+      if (v.length > 0) formatted += '(' + v.substring(0, 3);
+      if (v.length >= 3) formatted += ') ' + v.substring(3, 6);
+      if (v.length >= 6) formatted += '-' + v.substring(6, 8);
+      if (v.length >= 8) formatted += '-' + v.substring(8, 10);
+      this.value = formatted;
+    });
+  }
+
+  document.querySelectorAll('input[type="tel"], input[name="phone"]').forEach(applyPhoneMask);
+
+  // 6. UPDATE NAV USER NAME IF LOGGED IN
+  try {
+    const stored = localStorage.getItem('user_data');
+    if (stored) {
+      const user = JSON.parse(stored);
+      document.querySelectorAll('[data-user-nav-name]').forEach(el => {
+        el.textContent = user.name ? user.name.split(' ')[0] : 'Кабинет';
+      });
+    }
+  } catch (e) {}
+
 });

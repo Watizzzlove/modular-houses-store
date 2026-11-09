@@ -2,21 +2,118 @@
   --admin-accent: #f5a20a;
   --admin-accent-hover: #e89400;
   --admin-dark: #1e2229;
-  --admin-sidebar: #15181e;
-  --admin-bg: #f4f6f8;
+  --admin-sidebar: #17191d;
+  --admin-bg: #f4f3f0;
   --admin-card: #ffffff;
-  --admin-line: #e2e8f0;
-  --admin-text: #1a202c;
-  --admin-muted: #718096;
-  --admin-success: #38a169;
+  --admin-line: #e6e4dc;
+  --admin-text: #1c1d1f;
+  --admin-muted: #737373;
+  --admin-success: #27ae60;
   --admin-danger: #e53e3e;
   --radius: 10px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--admin-bg); color: var(--admin-text); line-height: 1.5; }
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  line-height: 1.45;
+  font-size: 14px;
+}
 
-/* Admin Auth View */
+/* Base Buttons */
+button, .btn {
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--admin-accent);
+  color: #1a1505;
+  border: none;
+  box-shadow: 0 2px 8px rgba(245, 162, 10, 0.35);
+}
+.btn-primary:hover {
+  background: var(--admin-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 162, 10, 0.45);
+}
+
+.btn-secondary {
+  background: #ffffff;
+  color: #1c1d1f;
+  border: 1px solid #dcdad4;
+}
+.btn-secondary:hover {
+  background: #f7f6f2;
+  border-color: #b5b3ad;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: #fff5f5;
+  color: #e53e3e;
+  border: 1px solid #feb2b2;
+}
+.btn-danger:hover {
+  background: #fed7d7;
+  border-color: #fc8181;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 14px;
+}
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 4px;
+}
+.form-input, .form-select, select.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  background: #ffffff;
+  color: #1c1d1f;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.form-input:focus, .form-select:focus {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgba(245, 162, 10, 0.15);
+}
+.form-input-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  height: 30px;
+}
+
+/* Admin Auth Overlay */
 .admin-auth-overlay {
   position: fixed;
   inset: 0;
@@ -27,123 +124,90 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--adm
   z-index: 500;
   padding: 20px;
 }
-
 .auth-card {
-  width: min(420px, 100%);
+  width: min(400px, 100%);
   background: #ffffff;
-  border-radius: 16px;
-  padding: 36px;
+  border-radius: 18px;
+  padding: 32px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
-
 .auth-card h2 {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
-  margin-bottom: 8px;
-}
-
-.auth-card p {
-  color: var(--admin-muted);
-  font-size: 14px;
-  margin-bottom: 24px;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
   margin-bottom: 6px;
 }
-
-.form-input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid var(--admin-line);
-  border-radius: var(--radius);
-  font-size: 14px;
-  outline: none;
+.auth-card p {
+  color: var(--admin-muted);
+  font-size: 13px;
+  margin-bottom: 20px;
 }
-
-.form-input:focus {
-  border-color: var(--admin-accent);
-}
-
 .btn-admin {
   width: 100%;
   padding: 12px;
   background: var(--admin-accent);
   color: #1a1505;
   border: none;
-  border-radius: var(--radius);
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(245, 162, 10, 0.35);
 }
-
 .btn-admin:hover {
   background: var(--admin-accent-hover);
 }
-
 .auth-toggle-link {
   text-align: center;
-  margin-top: 16px;
-  font-size: 13px;
+  margin-top: 14px;
+  font-size: 12px;
   color: var(--admin-muted);
 }
-
 .auth-toggle-link a {
   color: var(--admin-accent-hover);
   font-weight: 700;
   cursor: pointer;
 }
 
-/* Admin Dashboard Layout */
+/* Dashboard Layout */
 .admin-layout {
   display: flex;
   min-height: 100vh;
 }
-
 .admin-sidebar {
-  width: 260px;
+  width: 230px;
   background: var(--admin-sidebar);
   color: #fff;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
-
 .admin-brand {
-  padding: 24px 20px;
-  font-size: 18px;
+  padding: 18px 16px;
+  font-size: 16px;
   font-weight: 800;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
 .admin-nav {
-  padding: 20px 12px;
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex-grow: 1;
 }
-
 .admin-nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: var(--radius);
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
   color: #a0aec0;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   border: none;
   background: none;
@@ -151,121 +215,160 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--adm
   width: 100%;
   transition: all 0.15s;
 }
-
+.admin-nav-item svg {
+  flex-shrink: 0;
+  stroke: currentColor;
+}
 .admin-nav-item:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.06);
 }
-
 .admin-nav-item.is-active {
   background: var(--admin-accent);
   color: #1a1505;
   font-weight: 800;
 }
-
 .admin-sidebar-footer {
-  padding: 16px 20px;
+  padding: 14px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
 }
 
+/* Main Area */
 .admin-main {
   flex-grow: 1;
-  padding: 32px 40px;
+  padding: 18px 22px;
   overflow-y: auto;
+  max-width: calc(100vw - 230px);
 }
-
 .admin-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
-
 .admin-header h1 {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
 }
 
+/* Cards */
 .admin-card {
-  background: #fff;
-  border-radius: 12px;
+  background: #ffffff;
+  border-radius: 14px;
   border: 1px solid var(--admin-line);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  padding: 24px;
-  margin-bottom: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  padding: 18px 20px;
+  margin-bottom: 18px;
 }
-
 .admin-card-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
-
 .admin-card-head h3 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
 }
 
-/* Data Tables */
+/* Tables */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13px;
 }
-
 .admin-table th {
   text-align: left;
-  padding: 12px 14px;
-  background: var(--admin-bg);
-  border-bottom: 1px solid var(--admin-line);
+  padding: 10px 12px;
+  background: #faf9f6;
+  border-bottom: 1.5px solid var(--admin-line);
   font-weight: 700;
-  color: var(--admin-muted);
+  color: #555;
+  white-space: nowrap;
 }
-
 .admin-table td {
-  padding: 14px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--admin-line);
   vertical-align: middle;
 }
-
 .admin-table tr:hover td {
-  background: #fafbfc;
+  background: #faf9f5;
+}
+.nowrap {
+  white-space: nowrap;
 }
 
-/* Media Grid in Admin */
+/* Badges */
+.badge-status {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.badge-status.paid {
+  background: #def7ec;
+  color: #03543f;
+}
+.badge-status.pending {
+  background: #fef08a;
+  color: #713f12;
+}
+.badge-status.new {
+  background: #e1effe;
+  color: #1e429f;
+}
+.badge-status.in_production {
+  background: #fde8e8;
+  color: #9b1c1c;
+}
+.badge-status.delivering {
+  background: #edebfe;
+  color: #5521b5;
+}
+.badge-status.completed {
+  background: #def7ec;
+  color: #03543f;
+}
+
+/* Media Grid */
 .admin-media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-  margin-top: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
 }
-
 .admin-media-item {
   position: relative;
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid var(--admin-line);
-  border-radius: var(--radius);
+  border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
-
 .admin-media-item img {
   width: 100%;
-  height: 120px;
+  height: 115px;
   object-fit: cover;
+  display: block;
+  background: #f0eee8;
 }
-
 .admin-media-meta {
-  padding: 10px;
+  padding: 8px 10px;
   font-size: 11px;
-  color: var(--admin-muted);
+  color: #555;
+  line-height: 1.35;
 }
-
 .admin-media-delete-btn {
   position: absolute;
   top: 6px;
@@ -273,50 +376,17 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--adm
   background: rgba(229, 62, 62, 0.9);
   color: #fff;
   border: none;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   cursor: pointer;
   display: grid;
   place-items: center;
-  font-size: 14px;
-}
-
-.admin-media-delete-btn:hover {
-  background: #c53030;
-}
-
-/* Upload Dropzone */
-.upload-dropzone {
-  border: 2px dashed #cbd5e0;
-  border-radius: 12px;
-  padding: 32px 20px;
-  text-align: center;
-  background: #f8fafc;
-  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
   transition: all 0.2s;
 }
-
-.upload-dropzone:hover {
-  border-color: var(--admin-accent);
-  background: #fffdfa;
-}
-
-/* Badges */
-.badge-status {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.badge-status.paid {
-  background: #c6f6d5;
-  color: #22543d;
-}
-
-.badge-status.pending {
-  background: #feebc8;
-  color: #744210;
+.admin-media-delete-btn:hover {
+  background: #c53030;
+  transform: scale(1.1);
 }

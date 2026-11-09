@@ -65,6 +65,7 @@ const Admin = (function () {
     if (tabName === 'content') loadContentTab();
     if (tabName === 'settings') loadSettingsTab();
     if (tabName === 'orders') loadOrdersTab();
+    if (tabName === 'outbox') loadOutboxTab();
   }
 
   // --- CATALOG & PRICES TAB ---
@@ -226,7 +227,7 @@ const Admin = (function () {
 
       grid.innerHTML = items.map(item => `
         <div class="admin-media-item">
-          <img src="${item.url}" alt="${item.filename}" loading="lazy">
+          <img src="${item.url}" alt="${item.filename}" loading="lazy" onerror="this.closest('.admin-media-item').style.display='none';">
           <button class="admin-media-delete-btn" onclick="Admin.deleteMedia(${item.id})" title="Удалить">✕</button>
           <div class="admin-media-meta">
             <strong>${item.config_label || 'Базовый'}</strong> • ${item.color}<br>
@@ -358,40 +359,100 @@ const Admin = (function () {
   async function loadOrdersTab() {
     const tbody = document.querySelector('[data-admin-orders-list]');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="6">Загрузка заказов...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Загрузка заказов...</td></tr>';
 
     try {
       const res = await fetch('/api/admin/orders', { headers: { 'Authorization': `Bearer ${token}` } });
       const { orders } = await res.json();
 
-      if (orders.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--admin-muted)">Заказов пока нет</td></tr>';
+      if (!orders || orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--admin-muted); padding: 20px;">Заказов пока нет</td></tr>';
         return;
       }
 
       tbody.innerHTML = orders.map(o => {
         const isPaid = o.payment_status === 'PAID';
-        const itemsSummary = (o.items || []).map(i => `${i.title} (${formatPrice(i.price)})`).join('<br>');
+        const itemsSummary = (o.items || []).map(i => `• <strong>${i.title}</strong> (${formatPrice(i.price)} × ${i.quantity || 1})`).join('<br>');
         return `
           <tr>
-            <td><strong>${o.order_number}</strong><br><small style="color:var(--admin-muted)">${new Date(o.created_at).toLocaleString('ru-RU')}</small></td>
-            <td><strong>${o.customer_name}</strong><br>${o.customer_phone}</td>
-            <td>${o.customer_address || '—'}</td>
-            <td style="font-size:12px;">${itemsSummary}</td>
-            <td><strong>${formatPrice(o.total_price)}</strong></td>
-            <td>
-              <span class="badge-status ${isPaid ? 'paid' : 'pending'}">${isPaid ? 'ОПЛАЧЕНО' : 'ОЖИДАЕТ'}</span>
+            <td class="nowrap">
+              <strong>${o.order_number}</strong><br>
+              <small style="color:var(--admin-muted)">${new Date(o.created_at).toLocaleString('ru-RU')}</small>
+            </td>
+            <td class="nowrap">
+              <strong>${o.customer_name}</strong><br>
+              <span style="color:#444;">${o.customer_phone}</span>
+              ${o.customer_email ? `<br><small style="color:var(--admin-muted)">${o.customer_email}</small>` : ''}
+            </td>
+            <td style="font-size:12px; max-width: 260px;">${itemsSummary || o.customer_comment || '—'}</td>
+            <td class="nowrap"><strong style="color:var(--admin-accent); font-size:14px;">${formatPrice(o.total_price)}</strong></td>
+            <td class="nowrap">
+              <span class="badge-status ${isPaid ? 'paid' : 'pending'}">${isPaid ? '✓ ОПЛАЧЕН' : 'ОЖИДАЕТ'}</span>
               <div style="margin-top:6px;">
-                <button class="btn btn-secondary" style="padding:2px 8px;font-size:11px;" onclick="Admin.toggleOrderStatus(${o.id}, '${isPaid ? 'PENDING' : 'PAID'}')">
+                <button class="btn btn-secondary btn-sm" onclick="Admin.toggleOrderStatus(${o.id}, '${isPaid ? 'PENDING' : 'PAID'}')">
                   ${isPaid ? 'Сбросить' : 'Отметить оплаченным'}
                 </button>
               </div>
+            </td>
+            <td class="nowrap">
+              <select class="form-input form-input-sm" onchange="Admin.updateLifecycleStatus(${o.id}, this.value)" style="width: auto; font-weight: 700; cursor: pointer;">
+                <option value="NEW" ${o.status === 'NEW' ? 'selected' : ''}>1. Оформлен</option>
+                <option value="PAID" ${o.status === 'PAID' ? 'selected' : ''}>2. Оплачен</option>
+                <option value="IN_PRODUCTION" ${o.status === 'IN_PRODUCTION' ? 'selected' : ''}>3. В производстве</option>
+                <option value="DELIVERING" ${o.status === 'DELIVERING' ? 'selected' : ''}>4. Доставляется</option>
+                <option value="COMPLETED" ${o.status === 'COMPLETED' ? 'selected' : ''}>5. Исполнен</option>
+                <option value="CANCELLED" ${o.status === 'CANCELLED' ? 'selected' : ''}>Отменён</option>
+              </select>
             </td>
           </tr>
         `;
       }).join('');
     } catch (e) {
-      tbody.innerHTML = `<tr><td colspan="6" style="color:red">Ошибка: ${e.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="color:red; padding: 20px;">Ошибка: ${e.message}</td></tr>`;
+    }
+  }
+
+  async function updateLifecycleStatus(orderId, newStatus) {
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        // Notification
+      }
+    } catch (e) {
+      alert('Ошибка: ' + e.message);
+    }
+  }
+
+  // --- OUTBOX (EMAIL NOTIFICATIONS) TAB ---
+  async function loadOutboxTab() {
+    const tbody = document.querySelector('[data-admin-outbox-list]');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">Загрузка уведомлений...</td></tr>';
+    try {
+      const res = await fetch('/api/admin/outbox', { headers: { 'Authorization': `Bearer ${token}` } });
+      const { outbox } = await res.json();
+      if (!outbox || outbox.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--admin-muted); padding: 20px;">Уведомлений пока нет</td></tr>';
+        return;
+      }
+      tbody.innerHTML = outbox.map(m => `
+        <tr>
+          <td class="nowrap"><small>${new Date(m.timestamp).toLocaleString('ru-RU')}</small></td>
+          <td class="nowrap"><span class="badge-status ${m.type === 'order' ? 'paid' : 'pending'}">${m.type === 'order' ? 'ЗАКАЗ' : 'ЗАЯВКА'}</span></td>
+          <td class="nowrap">${m.to || 'orders@modul-haus.ru'}</td>
+          <td><strong>${m.subject}</strong><br><small style="color:var(--admin-muted);">${(m.text || '').substring(0, 140).replace(/\n/g, ' ')}...</small></td>
+          <td class="nowrap"><strong>${m.customerName || '—'}</strong><br>${m.customerPhone || '—'}</td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:red; padding: 20px;">Ошибка: ${e.message}</td></tr>`;
     }
   }
 
@@ -548,7 +609,9 @@ const Admin = (function () {
     viewConfigs,
     saveConfigPrice,
     deleteMedia,
-    toggleOrderStatus
+    toggleOrderStatus,
+    updateLifecycleStatus,
+    loadOutboxTab
   };
 })();
 

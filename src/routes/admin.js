@@ -268,13 +268,32 @@ router.get('/orders', (req, res) => {
 
 // PUT /api/admin/orders/:id/status
 router.put('/orders/:id/status', (req, res) => {
-  const { paymentStatus } = req.body;
-  if (!['PENDING', 'PAID', 'CANCELLED'].includes(paymentStatus)) {
-    return res.status(400).json({ error: 'Недопустимый статус заказа' });
+  const { paymentStatus, status } = req.body;
+  if (paymentStatus && !['PENDING', 'PAID', 'CANCELLED'].includes(paymentStatus)) {
+    return res.status(400).json({ error: 'Недопустимый статус оплаты' });
   }
 
-  db.prepare('UPDATE orders SET payment_status = ? WHERE id = ?').run(paymentStatus, req.params.id);
+  const validStatuses = ['NEW', 'PAID', 'IN_PRODUCTION', 'DELIVERING', 'COMPLETED', 'CANCELLED'];
+  if (status && !validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Недопустимый статус производства' });
+  }
+
+  if (paymentStatus && status) {
+    db.prepare('UPDATE orders SET payment_status = ?, status = ? WHERE id = ?').run(paymentStatus, status, req.params.id);
+  } else if (paymentStatus) {
+    db.prepare('UPDATE orders SET payment_status = ? WHERE id = ?').run(paymentStatus, req.params.id);
+  } else if (status) {
+    db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, req.params.id);
+  }
+
   res.json({ success: true, message: 'Статус заказа обновлен' });
+});
+
+// GET /api/admin/outbox - View sent email notifications
+const mailer = require('../services/mailer');
+router.get('/outbox', (req, res) => {
+  const outbox = mailer.getOutbox();
+  res.json({ outbox });
 });
 
 module.exports = router;

@@ -120,6 +120,7 @@ function initSchema() {
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       order_number TEXT UNIQUE NOT NULL,
+      user_id INTEGER,
       customer_name TEXT NOT NULL,
       customer_phone TEXT NOT NULL,
       customer_email TEXT,
@@ -128,11 +129,21 @@ function initSchema() {
       items_json TEXT NOT NULL,
       total_price INTEGER NOT NULL,
       payment_status TEXT DEFAULT 'PENDING',
+      status TEXT DEFAULT 'NEW',
       payment_id TEXT,
       payment_provider TEXT DEFAULT 'sandbox',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Safe migrations for added fields
+  const userColumns = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+  if (!userColumns.includes('phone')) db.exec("ALTER TABLE users ADD COLUMN phone TEXT");
+  if (!userColumns.includes('name')) db.exec("ALTER TABLE users ADD COLUMN name TEXT");
+
+  const orderColumns = db.prepare("PRAGMA table_info(orders)").all().map(c => c.name);
+  if (!orderColumns.includes('user_id')) db.exec("ALTER TABLE orders ADD COLUMN user_id INTEGER");
+  if (!orderColumns.includes('status')) db.exec("ALTER TABLE orders ADD COLUMN status TEXT DEFAULT 'NEW'");
 }
 
 initSchema();

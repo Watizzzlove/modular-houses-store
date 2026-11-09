@@ -103,7 +103,20 @@ async function runTests() {
   });
   assert.strictEqual(payRes.status, 200);
   assert.strictEqual(payRes.data.success, true);
-  console.log('✓ Payment successful (sandbox/0 RUB)');
+  console.log('✓ Payment session initiated');
+
+  // Confirm payment via gateway
+  const confirmRes = await request({
+    host: 'localhost',
+    port,
+    path: `/api/orders/${orderId}/confirm-payment`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { provider: 'test_gateway', paymentId: 'TEST-123' }
+  });
+  assert.strictEqual(confirmRes.status, 200);
+  assert.strictEqual(confirmRes.data.status, 'PAID');
+  console.log('✓ Payment confirmed (test gateway/0 RUB)');
 
   // 8. Admin Orders list
   console.log('Testing GET /api/admin/orders...');

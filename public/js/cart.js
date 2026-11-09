@@ -144,10 +144,221 @@ const Cart = (function () {
     }
   }
 
+  // Phone regex check
+  const PHONE_REGEX = /^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/;
+
+  function isValidPhone(p) {
+    if (!p) return false;
+    const clean = String(p).trim();
+    const digits = clean.replace(/\D/g, '');
+    return PHONE_REGEX.test(clean) && (digits.length === 10 || digits.length === 11);
+  }
+
+  function applyPhoneMask(input) {
+    if (!input) return;
+    input.addEventListener('input', function() {
+      let v = this.value.replace(/\D/g, '');
+      if (v.startsWith('7') || v.startsWith('8')) v = v.substring(1);
+      v = v.substring(0, 10);
+      let formatted = '+7 ';
+      if (v.length > 0) formatted += '(' + v.substring(0, 3);
+      if (v.length >= 3) formatted += ') ' + v.substring(3, 6);
+      if (v.length >= 6) formatted += '-' + v.substring(6, 8);
+      if (v.length >= 8) formatted += '-' + v.substring(8, 10);
+      this.value = formatted;
+    });
+  }
+
+  function openAuthRequiredModal() {
+    closeDrawer();
+    let authModal = document.querySelector('[data-cart-auth-modal]');
+    if (!authModal) {
+      authModal = document.createElement('div');
+      authModal.className = 'cart-checkout-modal';
+      authModal.setAttribute('data-cart-auth-modal', '');
+      authModal.innerHTML = `
+        <div class="cart-checkout-card" style="max-width: 460px;">
+          <div class="cart-checkout-head">
+            <h3 style="margin: 0; font-size: 20px;">Оформление заказа</h3>
+            <button type="button" class="checkout-close-btn" data-close-auth-modal aria-label="Закрыть">&times;</button>
+          </div>
+
+          <div style="background: #fff9e6; border: 1px solid #ffe399; border-radius: 14px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: #7a5400; line-height: 1.45;">
+            <strong>Зарегистрируйтесь или войдите</strong>, чтобы продолжить оформление заказа. В личном кабинете вы сможете отслеживать этапы производства дома, доставку и статус оплаты.
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <button type="button" id="cartAuthTabReg" style="background: #1c1d1f; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 700; font-size: 13px; cursor: pointer;">
+              Регистрация
+            </button>
+            <button type="button" id="cartAuthTabLogin" style="background: none; color: #666; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 700; font-size: 13px; cursor: pointer;">
+              Вход
+            </button>
+          </div>
+
+          <!-- REGISTER FORM -->
+          <form id="cartRegisterForm">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Ваше имя</label>
+              <input type="text" name="name" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="Иван Иванов" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Номер телефона</label>
+              <input type="tel" name="phone" id="cartRegPhoneInput" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="+7 (999) 000-00-00" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Email (необязательно)</label>
+              <input type="email" name="email" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="mail@example.com">
+            </div>
+            <div class="form-group" style="margin-bottom: 18px;">
+              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Пароль для личного кабинета</label>
+              <input type="password" name="password" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="Минимум 6 символов" minlength="6" required>
+            </div>
+            <button type="submit" class="btn-hero-orange" style="width: 100%; padding: 12px; font-size: 15px;">
+              Зарегистрироваться и продолжить
+            </button>
+          </form>
+
+          <!-- LOGIN FORM -->
+          <form id="cartLoginForm" style="display: none;">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Телефон или Email</label>
+              <input type="text" name="login" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="+7 (999) 000-00-00 или email" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 18px;">
+              <label style="font-size: 12px; font-weight: 700; display: block; margin-bottom: 4px;">Пароль</label>
+              <input type="password" name="password" class="lead-input-pill" style="width: 100%; box-sizing: border-box; border: 1px solid #dcdad4; padding: 10px 14px; border-radius: 10px;" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-hero-orange" style="width: 100%; padding: 12px; font-size: 15px;">
+              Войти и продолжить заказ
+            </button>
+          </form>
+        </div>
+      `;
+      document.body.appendChild(authModal);
+
+      // Bind close
+      authModal.querySelector('[data-close-auth-modal]').addEventListener('click', () => {
+        authModal.classList.remove('is-open');
+        document.body.style.overflow = '';
+      });
+
+      // Bind tabs
+      const tabReg = authModal.querySelector('#cartAuthTabReg');
+      const tabLogin = authModal.querySelector('#cartAuthTabLogin');
+      const regForm = authModal.querySelector('#cartRegisterForm');
+      const loginForm = authModal.querySelector('#cartLoginForm');
+
+      tabReg.addEventListener('click', () => {
+        tabReg.style.background = '#1c1d1f'; tabReg.style.color = '#fff';
+        tabLogin.style.background = 'none'; tabLogin.style.color = '#666';
+        regForm.style.display = 'block'; loginForm.style.display = 'none';
+      });
+
+      tabLogin.addEventListener('click', () => {
+        tabLogin.style.background = '#1c1d1f'; tabLogin.style.color = '#fff';
+        tabReg.style.background = 'none'; tabReg.style.color = '#666';
+        loginForm.style.display = 'block'; regForm.style.display = 'none';
+      });
+
+      applyPhoneMask(authModal.querySelector('#cartRegPhoneInput'));
+
+      // Register submit
+      regForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = regForm.querySelector('button');
+        btn.disabled = true;
+        btn.textContent = 'Регистрация...';
+
+        try {
+          const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: regForm.name.value,
+              phone: regForm.phone.value,
+              email: regForm.email.value,
+              password: regForm.password.value
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.token) {
+            localStorage.setItem('user_token', data.token);
+            localStorage.setItem('user_data', JSON.stringify(data.user));
+            authModal.classList.remove('is-open');
+            openCheckoutModal();
+          } else {
+            alert(data.error || 'Ошибка при регистрации');
+            btn.disabled = false;
+            btn.textContent = 'Зарегистрироваться и продолжить';
+          }
+        } catch (err) {
+          alert('Ошибка связи с сервером');
+          btn.disabled = false;
+          btn.textContent = 'Зарегистрироваться и продолжить';
+        }
+      });
+
+      // Login submit
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = loginForm.querySelector('button');
+        btn.disabled = true;
+        btn.textContent = 'Вход...';
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              login: loginForm.login.value,
+              password: loginForm.password.value
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.token) {
+            localStorage.setItem('user_token', data.token);
+            localStorage.setItem('user_data', JSON.stringify(data.user));
+            authModal.classList.remove('is-open');
+            openCheckoutModal();
+          } else {
+            alert(data.error || 'Ошибка входа');
+            btn.disabled = false;
+            btn.textContent = 'Войти и продолжить заказ';
+          }
+        } catch (err) {
+          alert('Ошибка связи с сервером');
+          btn.disabled = false;
+          btn.textContent = 'Войти и продолжить заказ';
+        }
+      });
+    }
+
+    authModal.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
   function openCheckoutModal() {
     closeDrawer();
     const modal = document.querySelector('[data-checkout-modal]');
     if (!modal) return;
+
+    // Pre-fill user data if authenticated
+    try {
+      const stored = localStorage.getItem('user_data');
+      if (stored) {
+        const u = JSON.parse(stored);
+        const nameInp = modal.querySelector('input[name="name"]');
+        const phoneInp = modal.querySelector('input[name="phone"]');
+        const emailInp = modal.querySelector('input[name="email"]');
+        if (nameInp && u.name) nameInp.value = u.name;
+        if (phoneInp && u.phone) phoneInp.value = u.phone;
+        if (emailInp && u.email && !u.email.includes('@modul-client.local')) emailInp.value = u.email;
+      }
+    } catch (e) {}
+
+    const phoneInp = modal.querySelector('input[name="phone"]');
+    if (phoneInp) applyPhoneMask(phoneInp);
 
     const summaryEl = modal.querySelector('[data-checkout-summary]');
     if (summaryEl) {
@@ -183,19 +394,20 @@ const Cart = (function () {
     }
 
     const formData = new FormData(formEl);
+    const customerPhone = formData.get('phone');
+    if (!isValidPhone(customerPhone)) {
+      alert('Пожалуйста, введите корректный номер телефона РФ (например, +7 999 123-45-67)');
+      return;
+    }
+
     const payload = {
       customerName: formData.get('name'),
-      customerPhone: formData.get('phone'),
+      customerPhone: customerPhone,
       customerEmail: formData.get('email'),
       customerAddress: formData.get('address'),
       customerComment: formData.get('comment'),
       items
     };
-
-    if (!payload.customerName || !payload.customerPhone) {
-      showToast('Пожалуйста, укажите имя и телефон');
-      return;
-    }
 
     const submitBtn = formEl.querySelector('button[type="submit"]');
     const originalText = submitBtn ? submitBtn.textContent : '';
@@ -205,33 +417,27 @@ const Cart = (function () {
     }
 
     try {
+      const token = localStorage.getItem('user_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       // 1. Create order
       const createRes = await fetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload)
       });
       const orderData = await createRes.json();
       if (!createRes.ok) throw new Error(orderData.error || 'Ошибка создания заказа');
 
-      // 2. Initiate payment
-      const payRes = await fetch(`/api/orders/${orderData.orderId}/pay`, { method: 'POST' });
-      const payData = await payRes.json();
-      if (!payRes.ok) throw new Error(payData.error || 'Ошибка инициализации оплаты');
-
       closeCheckoutModal();
+      clear();
 
-      // If YooKassa returns a real confirmation URL (redirect flow)
-      if (payData.confirmationUrl) {
-        clear();
-        window.location.href = payData.confirmationUrl;
-        return;
-      }
-
-      // If sandbox flow, show interactive payment modal or redirect
-      showPaymentModal(orderData.orderId, orderData.orderNumber, orderData.totalPrice);
+      // Redirect to test payment gateway
+      const paymentUrl = orderData.paymentUrl || `/payment.html?orderId=${orderData.orderId}`;
+      window.location.href = paymentUrl;
     } catch (err) {
-      showToast('Ошибка: ' + err.message);
+      alert('Ошибка: ' + err.message);
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -351,7 +557,13 @@ const Cart = (function () {
         showToast('Корзина пуста');
         return;
       }
-      openCheckoutModal();
+      // Business requirement: user must be registered / logged in to checkout and track order
+      const userToken = localStorage.getItem('user_token');
+      if (!userToken) {
+        openAuthRequiredModal();
+      } else {
+        openCheckoutModal();
+      }
       return;
     }
 

@@ -17,6 +17,17 @@ function runSeed() {
     console.log('[+] Admin created: admin@doka.local / admin123');
   }
 
+  // Also ensure admin@modul-haus.ru exists
+  const existingModulAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@modul-haus.ru');
+  if (!existingModulAdmin) {
+    const passwordHash = bcrypt.hashSync('admin123', 10);
+    db.prepare(`
+      INSERT INTO users (email, password_hash, role)
+      VALUES (?, ?, ?)
+    `).run('admin@modul-haus.ru', passwordHash, 'admin');
+    console.log('[+] Admin created: admin@modul-haus.ru / admin123');
+  }
+
   // 2. Categories
   const insertCat = db.prepare('INSERT OR IGNORE INTO categories (name, slug, sort_order) VALUES (?, ?, ?)');
   insertCat.run('Модульные дома', 'houses', 1);

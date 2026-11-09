@@ -3,6 +3,18 @@ const router = express.Router();
 const db = require('../db/database');
 const https = require('https');
 const crypto = require('crypto');
+const { optionalAuth, requireAuth } = require('../middleware/auth');
+const mailer = require('../services/mailer');
+
+// Russian phone format validator (+7/8 with 10-11 digits)
+const PHONE_REGEX = /^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/;
+
+function isValidPhone(phone) {
+  if (!phone) return false;
+  const clean = String(phone).trim();
+  const digits = clean.replace(/\D/g, '');
+  return PHONE_REGEX.test(clean) && (digits.length === 10 || digits.length === 11);
+}
 
 function getSetting(key) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
@@ -10,11 +22,15 @@ function getSetting(key) {
 }
 
 // POST /api/orders - Create a new order from cart
-router.post('/', (req, res) => {
+router.post('/', optionalAuth, (req, res) => {
   const { customerName, customerPhone, customerEmail, customerAddress, customerComment, items } = req.body;
 
-  if (!customerName || !customerPhone) {
-    return res.status(400).json({ error: 'Пожалуйста, укажите имя и номер телефона' });
+  if (!customerName || !customerName.trim()) {
+    return res.status(400).json({ error: 'Пожалуйста, укажите ваше имя' });
+  }
+
+  if (!customerPhone || !isValidPhone(customerPhone)) {
+    return res.status(400).json({ error: 'Пожалуйста, укажите корректный номер телефона РФ (например, +7 999 123-45-67)' });
   }
 
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -30,12 +46,26 @@ router.post('/', (req, res) => {
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const orderNumber = `DK-${dateStr}-${randomSuffix}`;
 
+  // Find user_id if authenticated or existing user
+  let userId = req.user ? req.user.id : null;
+  if (!userId && (customerEmail || customerPhone)) {
+    const cleanPhone = customerPhone.replace(/\D/g, '');
+    const user = db.prepare(`
+      SELECT id FROM users
+      WHERE (email = ? AND email != '')
+         OR (phone LIKE ? AND phone != '')
+      LIMIT 1
+    `).get(customerEmail ? customerEmail.trim().toLowerCase() : '', `%${cleanPhone.slice(-10)}%`);
+    if (user) userId = user.id;
+  }
+
   const result = db.prepare(`
     INSERT INTO orders (
-      order_number, customer_name, customer_phone, customer_email, customer_address, customer_comment, items_json, total_price, payment_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')
+      order_number, user_id, customer_name, customer_phone, customer_email, customer_address, customer_comment, items_json, total_price, payment_status, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 'NEW')
   `).run(
     orderNumber,
+    userId,
     customerName.trim(),
     customerPhone.trim(),
     (customerEmail || '').trim(),
@@ -45,35 +75,66 @@ router.post('/', (req, res) => {
     totalPrice
   );
 
+  const orderId = result.lastInsertRowid;
+  const createdOrder = {
+    id: orderId,
+    order_number: orderNumber,
+    customer_name: customerName.trim(),
+    customer_phone: customerPhone.trim(),
+    customer_email: (customerEmail || '').trim(),
+    customer_address: (customerAddress || '').trim(),
+    customer_comment: (customerComment || '').trim(),
+    items,
+    total_price: totalPrice,
+    status: 'NEW'
+  };
+
+  // Dispatch email notification to admin
+  mailer.sendOrderNotification(createdOrder).catch(console.error);
+
   res.status(201).json({
-    orderId: result.lastInsertRowid,
+    orderId,
     orderNumber,
-    totalPrice
+    totalPrice,
+    paymentUrl: `/payment.html?orderId=${orderId}`
   });
 });
 
 // POST /api/orders/lead - Consultation request from lead banner form (Screenshot 4)
-router.post('/lead', (req, res) => {
+router.post('/lead', optionalAuth, (req, res) => {
   const { name, phone, comment } = req.body;
 
-  if (!phone || !phone.trim()) {
-    return res.status(400).json({ error: 'Пожалуйста, укажите номер телефона' });
+  if (!phone || !isValidPhone(phone)) {
+    return res.status(400).json({ error: 'Пожалуйста, укажите корректный номер телефона РФ (например, +7 999 123-45-67)' });
   }
 
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const orderNumber = `LEAD-${dateStr}-${randomSuffix}`;
 
+  const cleanName = (name || 'Клиент с сайта').trim();
+  const cleanPhone = phone.trim();
+  const cleanComment = (comment || 'Заявка с формы обратной связи').trim();
+
+  let userId = req.user ? req.user.id : null;
+
   const result = db.prepare(`
     INSERT INTO orders (
-      order_number, customer_name, customer_phone, customer_email, customer_address, customer_comment, items_json, total_price, payment_status
-    ) VALUES (?, ?, ?, '', '', ?, '[]', 0, 'LEAD')
+      order_number, user_id, customer_name, customer_phone, customer_email, customer_address, customer_comment, items_json, total_price, payment_status, status
+    ) VALUES (?, ?, ?, ?, '', '', ?, '[]', 0, 'LEAD', 'NEW')
   `).run(
     orderNumber,
-    (name || 'Клиент с сайта').trim(),
-    phone.trim(),
-    (comment || 'Заявка с формы обратной связи').trim()
+    userId,
+    cleanName,
+    cleanPhone,
+    cleanComment
   );
+
+  mailer.sendLeadNotification({
+    customer_name: cleanName,
+    customer_phone: cleanPhone,
+    customer_comment: cleanComment
+  }).catch(console.error);
 
   res.status(201).json({
     success: true,
@@ -96,7 +157,7 @@ router.get('/:id', (req, res) => {
   });
 });
 
-// POST /api/orders/:id/pay - Initiate payment (YooKassa real test payment or sandbox)
+// POST /api/orders/:id/pay - Initiate payment (Returns payment URL for YooKassa / Test Gateway)
 router.post('/:id/pay', async (req, res) => {
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
   if (!order) {
@@ -104,14 +165,14 @@ router.post('/:id/pay', async (req, res) => {
   }
 
   if (order.payment_status === 'PAID') {
-    return res.json({ success: true, message: 'Заказ уже оплачен', orderId: order.id });
+    return res.json({ success: true, message: 'Заказ уже оплачен', orderId: order.id, redirectUrl: `/order-success.html?orderId=${order.id}` });
   }
 
   const shopId = process.env.YOOKASSA_SHOP_ID || getSetting('yookassa_shop_id');
   const secretKey = process.env.YOOKASSA_SECRET_KEY || getSetting('yookassa_secret_key');
 
   const protocol = req.protocol || 'http';
-  const host = req.get('host') || 'localhost:3000';
+  const host = req.get('host') || 'localhost:3030';
   const returnUrl = `${protocol}://${host}/order-success.html?orderId=${order.id}`;
 
   // If real YooKassa test credentials are provided:
@@ -130,7 +191,7 @@ router.post('/:id/pay', async (req, res) => {
           type: 'redirect',
           return_url: returnUrl
         },
-        description: `Оплата заказа ${order.order_number} в магазине dokabani`
+        description: `Оплата заказа ${order.order_number} в магазине MODUL.HAUS`
       });
 
       const yooResponse = await new Promise((resolve, reject) => {
@@ -171,29 +232,70 @@ router.post('/:id/pay', async (req, res) => {
           paymentId: yooResponse.data.id,
           confirmationUrl: yooResponse.data.confirmation.confirmation_url
         });
-      } else {
-        console.error('YooKassa error response:', yooResponse);
       }
     } catch (err) {
       console.error('YooKassa request exception:', err);
     }
   }
 
-  // Fallback to interactive test payment simulation (0 RUB instant test or test card)
-  db.prepare(`
-    UPDATE orders
-    SET payment_status = 'PAID', payment_provider = 'sandbox', payment_id = ?
-    WHERE id = ?
-  `).run(`SANDBOX-${Date.now()}`, order.id);
-
+  // Interactive test payment gateway URL
   res.json({
     provider: 'sandbox',
     success: true,
-    message: 'Тестовая транзакция успешно проведена (0 ₽)',
     orderId: order.id,
     orderNumber: order.order_number,
+    totalPrice: order.total_price,
+    paymentUrl: `/payment.html?orderId=${order.id}`,
+    confirmationUrl: `/payment.html?orderId=${order.id}`
+  });
+});
+
+// POST /api/orders/:id/confirm-payment - Real test gateway payment execution
+router.post('/:id/confirm-payment', (req, res) => {
+  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+  if (!order) {
+    return res.status(404).json({ error: 'Заказ не найден' });
+  }
+
+  const { paymentId, provider, cardLast4 } = req.body;
+  const pId = paymentId || `YK-TEST-${Date.now()}`;
+
+  db.prepare(`
+    UPDATE orders
+    SET payment_status = 'PAID',
+        status = 'PAID',
+        payment_provider = ?,
+        payment_id = ?
+    WHERE id = ?
+  `).run(provider || 'yookassa_test', pId, order.id);
+
+  console.log(`[PAYMENT SUCCESS] Order ${order.order_number} marked as PAID. Tx: ${pId}`);
+
+  res.json({
+    success: true,
+    message: 'Оплата успешно принята!',
+    orderId: order.id,
+    orderNumber: order.order_number,
+    status: 'PAID',
     redirectUrl: `/order-success.html?orderId=${order.id}`
   });
+});
+
+// PATCH /api/orders/:id/status - Update order lifecycle status (Admin only)
+router.patch('/:id/status', requireAuth, (req, res) => {
+  const { status } = req.body;
+  const validStatuses = ['NEW', 'PAID', 'IN_PRODUCTION', 'DELIVERING', 'COMPLETED', 'CANCELLED'];
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Недопустимый статус заказа' });
+  }
+
+  const order = db.prepare('SELECT id FROM orders WHERE id = ?').get(req.params.id);
+  if (!order) {
+    return res.status(404).json({ error: 'Заказ не найден' });
+  }
+
+  db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, req.params.id);
+  res.json({ success: true, orderId: req.params.id, status });
 });
 
 // GET /api/orders/:id/check-payment - Check status with YooKassa if applicable

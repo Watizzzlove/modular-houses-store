@@ -174,7 +174,32 @@ button, input, select, textarea {
   transform: translateY(-1px);
 }
 
-/* Modern SVG Cart Button */
+/* Modern SVG Cart & Profile Button */
+.btn-profile-pill {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+  white-space: nowrap;
+}
+.btn-profile-pill:hover {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
 .btn-cart-floating {
   background: rgba(255, 255, 255, 0.14);
   backdrop-filter: blur(12px);
