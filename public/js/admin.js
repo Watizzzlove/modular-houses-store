@@ -12,8 +12,11 @@ const Admin = (function () {
 
   function init() {
     bindEvents();
-    // Always present the login overlay on visit per security & testing requirement
-    showAuthOverlay(true);
+    if (token) {
+      checkAuth();
+    } else {
+      showAuthOverlay(true);
+    }
   }
 
   function showAuthOverlay(show, isRegister = false) {
@@ -400,9 +403,65 @@ const Admin = (function () {
         },
         body: JSON.stringify(data)
       });
-      if (res.ok) alert('Настройки сохранены!');
+      const resData = await res.json();
+      if (res.ok) {
+        alert('Настройки успешно сохранены!');
+      } else {
+        alert('Ошибка сохранения настроек: ' + (resData.error || res.statusText));
+      }
     } catch (e) {
       alert('Ошибка: ' + e.message);
+    }
+  }
+
+  async function testMailSettings() {
+    const form = document.querySelector('[data-admin-settings-form]');
+    const statusEl = document.getElementById('adminMailTestMsg');
+    const testBtn = document.getElementById('btnAdminTestMail');
+    if (!form || !statusEl || !testBtn) return;
+
+    const data = {};
+    Array.from(form.elements).forEach(el => {
+      if (el.name) data[el.name] = el.value;
+    });
+
+    testBtn.disabled = true;
+    testBtn.textContent = 'Проверка SMTP...';
+    statusEl.style.display = 'block';
+    statusEl.style.background = '#f3f4f6';
+    statusEl.style.color = '#374151';
+    statusEl.style.border = '1px solid #d1d5db';
+    statusEl.textContent = 'Подключение к SMTP серверу ' + (data.smtp_host || 'smtp.mail.ru') + '...';
+
+    try {
+      const res = await fetch('/api/admin/settings/test-mail', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      const resData = await res.json();
+      if (res.ok && resData.success) {
+        statusEl.style.background = '#def7ec';
+        statusEl.style.color = '#03543f';
+        statusEl.style.border = '1px solid #31c48d';
+        statusEl.innerHTML = '<strong>✓ Успешно!</strong> ' + (resData.message || 'Тестовое письмо отправлено на ' + data.admin_notify_email);
+      } else {
+        statusEl.style.background = '#fde8e8';
+        statusEl.style.color = '#9b1c1c';
+        statusEl.style.border = '1px solid #f98080';
+        statusEl.innerHTML = '<strong>✕ Ошибка SMTP:</strong> ' + (resData.error || 'Не удалось отправить проверочное письмо');
+      }
+    } catch (err) {
+      statusEl.style.background = '#fde8e8';
+      statusEl.style.color = '#9b1c1c';
+      statusEl.style.border = '1px solid #f98080';
+      statusEl.innerHTML = '<strong>✕ Ошибка связи:</strong> ' + err.message;
+    } finally {
+      testBtn.disabled = false;
+      testBtn.textContent = 'Проверить SMTP и отправить тест';
     }
   }
 
