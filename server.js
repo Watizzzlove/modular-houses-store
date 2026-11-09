@@ -31,6 +31,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Базовые заголовки безопасности (Security Headers: защита от MIME-sniffing, Clickjacking и XSS)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
 // Раздача статических файлов по стандартной структуре проекта:
 // public/catalog - каталог фото домов и бань
 // public/pages - HTML страницы

@@ -1,0 +1,53 @@
+name: CI / Automated Tests & Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Unit & Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Seed database
+        run: npm run seed
+
+      - name: Start server in background
+        run: node server.js &
+        env:
+          PORT: 3030
+          NODE_ENV: test
+          JWT_SECRET: test-github-actions-secret-key-2026
+
+      - name: Wait for server to start
+        run: npx wait-on http://localhost:3030/api/health --timeout 15000
+
+      - name: Run all automated tests (19 tests)
+        run: npm run test:all
+
+  docker:
+    name: Build Docker Container
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t modular-houses-store:latest .
