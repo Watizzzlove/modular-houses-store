@@ -858,3 +858,6 @@ const Cart = (function () {
     showToast
   };
 })();
+
+// Экспорт в глобальную область видимости
+window.Cart = Cart;

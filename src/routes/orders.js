@@ -368,4 +368,36 @@ router.get('/:id/check-payment', async (req, res) => {
   res.json({ status: order.payment_status });
 });
 
+// POST /api/orders/webhook/yookassa
+// Официальный вебхук ЮKassa для асинхронных уведомлений о статусе платежей
+router.post('/webhook/yookassa', (req, res) => {
+  const event = req.body;
+  if (!event || !event.event) {
+    return res.status(400).send('Invalid webhook event');
+  }
+
+  if (event.event === 'payment.succeeded' && event.object) {
+    const paymentId = event.object.id;
+    const order = db.prepare('SELECT * FROM orders WHERE payment_id = ?').get(paymentId);
+    if (order) {
+      db.prepare(`
+        UPDATE orders
+        SET payment_status = 'PAID',
+            status = 'PAID'
+        WHERE id = ?
+      `).run(order.id);
+      console.log(`[YOOKASSA WEBHOOK] Платеж подтвержден для заказа #${order.order_number}`);
+
+      // Отправка уведомления на почту администратора
+      mailer.sendOrderNotification({
+        ...order,
+        payment_status: 'PAID'
+      }).catch(err => console.error('Ошибка отправки email по вебхуку:', err.message));
+    }
+  }
+
+  // Всегда возвращаем HTTP 200, чтобы ЮKassa не повторяла запрос
+  res.status(200).send('OK');
+});
+
 module.exports = router;

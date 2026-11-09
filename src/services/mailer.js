@@ -173,14 +173,23 @@ async function dispatchEmail({ subject, text, html, data, logMeta }) {
 
 // Тестирование подключения к SMTP серверу и отправка проверочного письма
 async function testSmtpConnection(overrideSettings = {}) {
-  const settings = { ...getNotifySettings(), ...overrideSettings };
+  const base = getNotifySettings();
+  const settings = {
+    adminEmail: overrideSettings.admin_notify_email || overrideSettings.adminEmail || base.adminEmail,
+    smtpHost: overrideSettings.smtp_host || overrideSettings.smtpHost || base.smtpHost,
+    smtpPort: Number(overrideSettings.smtp_port) || Number(overrideSettings.smtpPort) || base.smtpPort,
+    smtpUser: overrideSettings.smtp_user || overrideSettings.smtpUser || base.smtpUser,
+    smtpPass: (overrideSettings.smtp_pass !== undefined ? overrideSettings.smtp_pass : (overrideSettings.smtpPass !== undefined ? overrideSettings.smtpPass : base.smtpPass) || '').trim(),
+    mailService: overrideSettings.mail_service || overrideSettings.mailService || base.mailService
+  };
+
   if (!nodemailer) {
     return { success: false, error: 'Модуль nodemailer не установлен на сервере' };
   }
 
   const pass = (settings.smtpPass || '').trim().replace(/\s+/g, '');
   if (!pass) {
-    return { success: false, error: 'Пароль приложения SMTP не указан. Введите 16-значный пароль приложения.' };
+    return { success: false, error: 'Пароль приложения SMTP не указан. Пожалуйста, введите 16-значный пароль приложения.' };
   }
 
   try {

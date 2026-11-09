@@ -544,25 +544,45 @@ const Admin = (function () {
   async function loadOutboxTab() {
     const tbody = document.querySelector('[data-admin-outbox-list]');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">Загрузка уведомлений...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Загрузка уведомлений...</td></tr>';
     try {
       const res = await fetch('/api/admin/outbox', { headers: { 'Authorization': `Bearer ${token}` } });
       const { outbox } = await res.json();
       if (!outbox || outbox.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--admin-muted); padding: 20px;">Уведомлений пока нет</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--admin-muted); padding: 20px;">Уведомлений пока нет</td></tr>';
         return;
       }
-      tbody.innerHTML = outbox.map(m => `
-        <tr>
-          <td class="nowrap"><small>${new Date(m.timestamp).toLocaleString('ru-RU')}</small></td>
-          <td class="nowrap"><span class="badge-status ${m.type === 'order' ? 'paid' : 'pending'}">${m.type === 'order' ? 'ЗАКАЗ' : 'ЗАЯВКА'}</span></td>
-          <td class="nowrap">${m.to || 'orders@modul-haus.ru'}</td>
-          <td><strong>${m.subject}</strong><br><small style="color:var(--admin-muted);">${(m.text || '').substring(0, 140).replace(/\n/g, ' ')}...</small></td>
-          <td class="nowrap"><strong>${m.customerName || '—'}</strong><br>${m.customerPhone || '—'}</td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = outbox.map(m => {
+        let statusBadge = '<span class="badge-status pending">В очереди</span>';
+        if (m.status === 'SENT_SMTP') {
+          statusBadge = '<span class="badge-status paid" title="' + (m.details || '') + '">✓ SMTP ОТПРАВЛЕНО</span>';
+        } else if (m.status === 'ERROR_SMTP') {
+          statusBadge = '<span class="badge-status" style="background:#fde8e8;color:#9b1c1c;" title="' + (m.details || '') + '">✕ ОШИБКА SMTP</span>';
+        } else if (m.status === 'SENT_FORMSUBMIT') {
+          statusBadge = '<span class="badge-status paid">✓ FORMSUBMIT</span>';
+        } else if (m.status === 'ERROR_FORMSUBMIT') {
+          statusBadge = '<span class="badge-status" style="background:#fde8e8;color:#9b1c1c;">✕ FORMSUBMIT</span>';
+        }
+
+        const typeLabel = m.type === 'order' ? 'ЗАКАЗ' : (m.type === 'test' ? 'ТЕСТ' : 'ЗАЯВКА');
+        const typeBadge = '<span class="badge-status ' + (m.type === 'order' ? 'paid' : (m.type === 'test' ? '' : 'pending')) + '">' + typeLabel + '</span>';
+
+        return `
+          <tr>
+            <td class="nowrap"><small>${new Date(m.timestamp).toLocaleString('ru-RU')}</small></td>
+            <td class="nowrap">${typeBadge}</td>
+            <td class="nowrap">${statusBadge}</td>
+            <td class="nowrap">${m.to || 'orders@modul-haus.ru'}</td>
+            <td>
+              <strong>${m.subject}</strong>
+              ${m.details ? `<br><small style="color:${m.status && m.status.startsWith('ERROR') ? '#c81e1e' : 'var(--admin-muted)'};">${m.details}</small>` : ''}
+            </td>
+            <td class="nowrap"><strong>${m.customerName || '—'}</strong><br>${m.customerPhone || '—'}</td>
+          </tr>
+        `;
+      }).join('');
     } catch (e) {
-      tbody.innerHTML = `<tr><td colspan="5" style="color:red; padding: 20px;">Ошибка: ${e.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="color:red; padding: 20px;">Ошибка: ${e.message}</td></tr>`;
     }
   }
 
@@ -757,6 +777,15 @@ const Admin = (function () {
       settingsForm.addEventListener('submit', (e) => {
         e.preventDefault();
         saveSettings(settingsForm);
+      });
+    }
+
+    // Test Mail Button
+    const btnTestMail = document.getElementById('btnAdminTestMail');
+    if (btnTestMail) {
+      btnTestMail.addEventListener('click', (e) => {
+        e.preventDefault();
+        testMailSettings();
       });
     }
 

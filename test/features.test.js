@@ -220,7 +220,34 @@ async function runFeatureTests() {
   assert.strictEqual(registerPushRes.data.user.phone, pushPhone);
   console.log(`✓ User successfully registered via push code verification`);
 
-  console.log('\n🎉 ALL 9 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
+  console.log('10. Testing YooKassa payment webhook endpoint...');
+  const webhookPaymentId = 'yoo_pay_' + Date.now();
+  // Assign payment_id to orderId
+  const db = require('../src/db/database');
+  db.prepare('UPDATE orders SET payment_id = ? WHERE id = ?').run(webhookPaymentId, orderId);
+
+  const webhookRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/orders/webhook/yookassa',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }, {
+    type: 'notification',
+    event: 'payment.succeeded',
+    object: {
+      id: webhookPaymentId,
+      status: 'succeeded',
+      paid: true,
+      amount: { value: '1450000.00', currency: 'RUB' }
+    }
+  });
+  assert.strictEqual(webhookRes.status, 200);
+  const updatedOrder = db.prepare('SELECT payment_status FROM orders WHERE id = ?').get(orderId);
+  assert.strictEqual(updatedOrder.payment_status, 'PAID');
+  console.log(`✓ YooKassa webhook processed successfully, order status updated to: PAID`);
+
+  console.log('\n🎉 ALL 10 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
 }
 
 runFeatureTests().catch(err => {
