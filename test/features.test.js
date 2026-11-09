@@ -247,7 +247,14 @@ async function runFeatureTests() {
   assert.strictEqual(updatedOrder.payment_status, 'PAID');
   console.log(`✓ YooKassa webhook processed successfully, order status updated to: PAID`);
 
-  console.log('\n🎉 ALL 10 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
+  console.log('11. Testing Telegram notification graceful fallback...');
+  const telegram = require('../src/services/telegram');
+  const tgResult = await telegram.sendMessage('Test notification');
+  assert.strictEqual(typeof tgResult, 'object');
+  assert.ok(tgResult.skipped || tgResult.success, 'Telegram should gracefully handle unconfigured or configured state');
+  console.log(`✓ Telegram service handled gracefully (skipped: ${tgResult.skipped || false})`);
+
+  console.log('\n🎉 ALL 11 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
 }
 
 runFeatureTests().catch(err => {

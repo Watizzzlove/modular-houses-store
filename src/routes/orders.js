@@ -14,6 +14,7 @@ const https = require('https');
 const crypto = require('crypto');
 const { optionalAuth, requireAuth } = require('../middleware/auth');
 const mailer = require('../services/mailer');
+const telegram = require('../services/telegram');
 
 // Валидатор формата номера телефона РФ (+7 или 8 с 10-11 цифрами)
 const PHONE_REGEX = /^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/;
@@ -103,8 +104,9 @@ router.post('/', optionalAuth, (req, res) => {
     status: 'NEW'
   };
 
-  // Отправляем email-уведомление администратору (асинхронно, без задержки ответа клиенту)
+  // Отправляем email и Telegram уведомления администратору (асинхронно)
   mailer.sendOrderNotification(createdOrder).catch(console.error);
+  telegram.sendOrderNotification(createdOrder).catch(console.error);
 
   res.status(201).json({
     orderId,
@@ -145,8 +147,13 @@ router.post('/lead', optionalAuth, (req, res) => {
     cleanComment
   );
 
-  // Оповещаем менеджера по почте
+  // Оповещаем менеджера по почте и в Telegram
   mailer.sendLeadNotification({
+    customer_name: cleanName,
+    customer_phone: cleanPhone,
+    customer_comment: cleanComment
+  }).catch(console.error);
+  telegram.sendLeadNotification({
     customer_name: cleanName,
     customer_phone: cleanPhone,
     customer_comment: cleanComment
@@ -388,11 +395,15 @@ router.post('/webhook/yookassa', (req, res) => {
       `).run(order.id);
       console.log(`[YOOKASSA WEBHOOK] Платеж подтвержден для заказа #${order.order_number}`);
 
-      // Отправка уведомления на почту администратора
+      // Отправка уведомления на почту и в Telegram администратора
       mailer.sendOrderNotification({
         ...order,
         payment_status: 'PAID'
       }).catch(err => console.error('Ошибка отправки email по вебхуку:', err.message));
+      telegram.sendOrderNotification({
+        ...order,
+        payment_status: 'PAID'
+      }).catch(err => console.error('Ошибка отправки Telegram по вебхуку:', err.message));
     }
   }
 
