@@ -181,6 +181,152 @@ router.get('/:id', (req, res) => {
   });
 });
 
+// GET /api/orders/:id/contract
+// Формирование официального договора поставки и сметы в печатном формате
+router.get('/:id/contract', (req, res) => {
+  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+  if (!order) {
+    return res.status(404).send('Заказ не найден');
+  }
+
+  const items = JSON.parse(order.items_json || '[]');
+  const isPaid = order.payment_status === 'PAID';
+  const priceFormatted = new Intl.NumberFormat('ru-RU').format(order.total_price);
+  const dateFormatted = new Date(order.created_at).toLocaleDateString('ru-RU', {
+    day: '2-digit', month: 'long', year: 'numeric'
+  });
+
+  const itemsRows = items.map((it, idx) => `
+    <tr>
+      <td style="text-align: center; width: 40px;">${idx + 1}</td>
+      <td>
+        <strong>${it.title || 'Модульный объект'}</strong>
+        ${it.subtitle ? `<div style="font-size: 12px; color: #666; margin-top: 2px;">${it.subtitle}</div>` : ''}
+        ${it.options ? `<div style="font-size: 11.5px; color: #777; margin-top: 4px;">Комплектация: ${Object.entries(it.options).map(([k, v]) => `${k}: ${v}`).join(', ')}</div>` : ''}
+      </td>
+      <td style="text-align: center; width: 60px;">1 шт.</td>
+      <td style="text-align: right; width: 140px; font-weight: 600;">${new Intl.NumberFormat('ru-RU').format(it.price || 0)} ₽</td>
+    </tr>
+  `).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Договор поставки и спецификация #${order.order_number}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1c1d1f; line-height: 1.5; padding: 40px; max-width: 820px; margin: 0 auto; background: #fff; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1c1d1f; padding-bottom: 18px; margin-bottom: 24px; }
+    .brand { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand span { color: #f97316; }
+    .doc-meta { text-align: right; font-size: 13px; color: #555; }
+    h1 { font-size: 19px; font-weight: 800; text-align: center; margin: 20px 0 16px; text-transform: uppercase; letter-spacing: -0.01em; }
+    .party-block { display: flex; gap: 20px; margin-bottom: 24px; font-size: 13px; }
+    .party-col { flex: 1; background: #faf9f6; border: 1px solid #e7e5e0; border-radius: 8px; padding: 14px 18px; }
+    .party-title { font-weight: 700; font-size: 13.5px; margin-bottom: 6px; color: #111; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+    th, td { border: 1px solid #d1d5db; padding: 10px 14px; text-align: left; }
+    th { background: #f3f4f6; font-weight: 700; }
+    .total-row td { font-weight: 800; font-size: 15px; background: #faf9f6; }
+    .stamp-badge { display: inline-block; padding: 6px 14px; border-radius: 6px; font-weight: 800; font-size: 13px; text-transform: uppercase; border: 2px solid; }
+    .stamp-paid { border-color: #10b981; color: #10b981; background: rgba(16, 185, 129, 0.08); }
+    .stamp-pending { border-color: #f59e0b; color: #b45309; background: rgba(245, 158, 11, 0.08); }
+    .legal-terms { font-size: 12px; color: #555; line-height: 1.6; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; }
+    .sig-col { width: 45%; border-top: 1px solid #111; padding-top: 8px; font-size: 13px; }
+    .print-btn-bar { margin-bottom: 24px; text-align: right; }
+    .print-btn { background: #f97316; color: #fff; border: none; padding: 10px 20px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; }
+    @media print {
+      .print-btn-bar { display: none !important; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-btn-bar">
+    <button class="print-btn" onclick="window.print()">Распечатать договор и смету (PDF)</button>
+  </div>
+
+  <div class="header">
+    <div>
+      <div class="brand">MODUL<span>.HAUS</span></div>
+      <div style="font-size: 12px; color: #666; margin-top: 4px;">Завод модульного домостроения и бань</div>
+    </div>
+    <div class="doc-meta">
+      <div><strong>Договор #${order.order_number}</strong></div>
+      <div>Дата: ${dateFormatted}</div>
+      <div style="margin-top: 6px;">
+        <span class="stamp-badge ${isPaid ? 'stamp-paid' : 'stamp-pending'}">
+          ${isPaid ? 'ОПЛАЧЕНО' : 'ОЖИДАЕТ ОПЛАТЫ'}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <h1>Договор поставки и спецификация #${order.order_number}</h1>
+
+  <div class="party-block">
+    <div class="party-col">
+      <div class="party-title">Поставщик:</div>
+      <div><strong>ООО «МОДУЛЬ ХАУС»</strong></div>
+      <div>ИНН 7453001234 / ОГРН 1207400056789</div>
+      <div>Адрес производства: г. Челябинск, Троицкий тракт, 11</div>
+      <div>Тел: +7 (999) 000-00-00 / Email: info@modul-haus.ru</div>
+    </div>
+    <div class="party-col">
+      <div class="party-title">Покупатель:</div>
+      <div><strong>${order.customer_name || 'Не указан'}</strong></div>
+      <div>Телефон: ${order.customer_phone || '—'}</div>
+      <div>Email: ${order.customer_email || '—'}</div>
+      <div>Адрес доставки: ${order.customer_address || 'Самовывоз с завода'}</div>
+    </div>
+  </div>
+
+  <h3 style="font-size: 15px; margin-bottom: 8px;">Спецификация поставляемой продукции</h3>
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align: center;">№</th>
+        <th>Наименование и комплектация</th>
+        <th style="text-align: center;">Кол-во</th>
+        <th style="text-align: right;">Сумма</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemsRows}
+      <tr class="total-row">
+        <td colspan="3" style="text-align: right;">ИТОГО К ОПЛАТЕ:</td>
+        <td style="text-align: right; color: #f97316;">${priceFormatted} ₽</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="legal-terms">
+    <strong>Условия изготовления и гарантии:</strong><br>
+    1. Поставщик обязуется изготовить и передать Покупателю модульную конструкцию согласно утверждённой выше спецификации в срок до 30 рабочих дней с момента внесения оплаты.<br>
+    2. Гарантия на силовой каркас, скрытые дефекты и герметичность кровли составляет 5 (пять) лет с момента подписания акта приёма-передачи.<br>
+    3. Доставка и монтаж на свайный фундамент осуществляются специализированной бригадой завода.
+  </div>
+
+  <div class="signatures">
+    <div class="sig-col">
+      <strong>От Поставщика:</strong><br><br>
+      Генеральный директор ООО «МОДУЛЬ ХАУС»<br>
+      / Смирнов А. В. / _________________ (М.П.)
+    </div>
+    <div class="sig-col">
+      <strong>От Покупателя:</strong><br><br>
+      ${order.customer_name || 'Покупатель'}<br>
+      _________________ / _________________ /
+    </div>
+  </div>
+</body>
+</html>`;
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+});
+
 // POST /api/orders/:id/pay
 // Инициализация платежа: если настроена ЮKassa, стучимся в ее API,
 // иначе отдаем ссылку на наш тестовый интерактивный шлюз оплаты (sandbox)

@@ -362,6 +362,70 @@ router.put('/orders/:id/status', (req, res) => {
   res.json({ success: true, message: 'Статус заказа обновлен' });
 });
 
+// GET /api/admin/analytics
+// Сводная аналитика и ключевые показатели (KPI) магазина
+router.get('/analytics', (req, res) => {
+  try {
+    const revenueRow = db.prepare(`
+      SELECT 
+        COALESCE(SUM(total_price), 0) AS total_revenue,
+        COUNT(*) AS total_orders,
+        COALESCE(SUM(CASE WHEN payment_status = 'PAID' THEN 1 ELSE 0 END), 0) AS paid_orders,
+        COALESCE(AVG(CASE WHEN payment_status = 'PAID' THEN total_price ELSE NULL END), 0) AS avg_order_value
+      FROM orders
+    `).get();
+
+    const clientsCount = db.prepare(`
+      SELECT COUNT(*) AS total_clients FROM users WHERE role = 'client'
+    `).get().total_clients;
+
+    const statusRows = db.prepare(`
+      SELECT status, COUNT(*) AS count 
+      FROM orders 
+      GROUP BY status
+    `).all();
+    const statusMap = {};
+    for (const s of statusRows) statusMap[s.status] = s.count;
+
+    const recentOrders = db.prepare(`
+      SELECT id, order_number, customer_name, customer_phone, total_price, payment_status, status, created_at
+      FROM orders
+      ORDER BY id DESC
+      LIMIT 5
+    `).all();
+
+    const dailyStats = db.prepare(`
+      SELECT 
+        substr(created_at, 1, 10) AS day,
+        COUNT(*) AS orders_count,
+        COALESCE(SUM(CASE WHEN payment_status = 'PAID' THEN total_price ELSE 0 END), 0) AS daily_revenue
+      FROM orders
+      GROUP BY day
+      ORDER BY day DESC
+      LIMIT 7
+    `).all().reverse();
+
+    res.json({
+      success: true,
+      metrics: {
+        totalRevenue: revenueRow.total_revenue,
+        totalOrders: revenueRow.total_orders,
+        paidOrders: revenueRow.paid_orders,
+        avgOrderValue: Math.round(revenueRow.avg_order_value),
+        conversionRate: revenueRow.total_orders > 0 
+          ? Math.round((revenueRow.paid_orders / revenueRow.total_orders) * 100) 
+          : 0,
+        totalClients: clientsCount
+      },
+      statusDistribution: statusMap,
+      dailyStats,
+      recentOrders
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET /api/admin/outbox
 // Журнал отправленных почтовых уведомлений администратора
 router.get('/outbox', (req, res) => {

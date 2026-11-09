@@ -337,12 +337,14 @@
       <a href="#post-orders" class="sidebar-link"><span class="method-tag post">POST</span> /api/orders</a>
       <a href="#post-orders-pay" class="sidebar-link"><span class="method-tag post">POST</span> /api/orders/:id/pay</a>
       <a href="#post-orders-confirm" class="sidebar-link"><span class="method-tag post">POST</span> /api/orders/:id/confirm</a>
+      <a href="#get-orders-contract" class="sidebar-link"><span class="method-tag get">GET</span> /api/orders/:id/contract</a>
       <a href="#post-orders-webhook" class="sidebar-link"><span class="method-tag post">POST</span> .../webhook/yookassa</a>
 
       <div class="sidebar-group-title">5. Лиды и заявки</div>
       <a href="#post-leads" class="sidebar-link"><span class="method-tag post">POST</span> /api/leads</a>
 
       <div class="sidebar-group-title">6. Администрирование</div>
+      <a href="#get-admin-analytics" class="sidebar-link"><span class="method-tag get">GET</span> /api/admin/analytics</a>
       <a href="#get-admin-orders" class="sidebar-link"><span class="method-tag get">GET</span> /api/admin/orders</a>
       <a href="#patch-order-status" class="sidebar-link"><span class="method-tag patch">PATCH</span> /api/orders/:id/status</a>
       <a href="#get-admin-outbox" class="sidebar-link"><span class="method-tag get">GET</span> /api/admin/outbox</a>
@@ -519,6 +521,15 @@ terraceType: "covered"</div>
           <div class="endpoint-desc">Фиксация факта успешной оплаты и автоматический перевод статуса заказа в <code>PAID</code>.</div>
         </div>
 
+        <!-- GET /api/orders/:id/contract -->
+        <div class="endpoint-card" id="get-orders-contract">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/orders/:id/contract</span>
+          </div>
+          <div class="endpoint-desc">Генерация официального договора поставки, сметы и спецификации в формате для печати или сохранения в PDF с реквизитами завода и штампом оплаты.</div>
+        </div>
+
         <!-- POST /api/orders/webhook/yookassa -->
         <div class="endpoint-card" id="post-orders-webhook">
           <div class="endpoint-header">
@@ -546,6 +557,16 @@ terraceType: "covered"</div>
       <!-- 6. ADMIN -->
       <section>
         <h2 style="font-size: 20px; font-weight: 800; margin: 32px 0 16px;">6. Панель администратора</h2>
+
+        <!-- GET /api/admin/analytics -->
+        <div class="endpoint-card" id="get-admin-analytics">
+          <div class="endpoint-header">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url">/api/admin/analytics</span>
+            <span class="endpoint-auth-badge">Требуется JWT Admin</span>
+          </div>
+          <div class="endpoint-desc">Сводная исполнительная аналитика: общая выручка, конверсия в оплату, средний чек, количество зарегистрированных клиентов, распределение статусов и динамика продаж за 7 дней.</div>
+        </div>
 
         <!-- GET /api/admin/orders -->
         <div class="endpoint-card" id="get-admin-orders">

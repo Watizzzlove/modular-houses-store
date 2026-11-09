@@ -67,12 +67,105 @@ const Admin = (function () {
       section.style.display = section.dataset.tabContent === tabName ? 'block' : 'none';
     });
 
+    if (tabName === 'dashboard') loadDashboardTab();
     if (tabName === 'catalog') loadCatalogTab();
     if (tabName === 'media') loadMediaTab();
     if (tabName === 'content') loadContentTab();
     if (tabName === 'settings') loadSettingsTab();
     if (tabName === 'orders') loadOrdersTab();
     if (tabName === 'outbox') loadOutboxTab();
+  }
+
+  // --- DASHBOARD & ANALYTICS TAB ---
+  async function loadDashboardTab() {
+    try {
+      const res = await fetch('/api/admin/analytics', { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (!data.success) return;
+
+      const m = data.metrics;
+      const revEl = document.querySelector('[data-dash-revenue]');
+      const ordEl = document.querySelector('[data-dash-orders]');
+      const convEl = document.querySelector('[data-dash-conversion]');
+      const aovEl = document.querySelector('[data-dash-aov]');
+      const cliEl = document.querySelector('[data-dash-clients]');
+
+      if (revEl) revEl.textContent = new Intl.NumberFormat('ru-RU').format(m.totalRevenue) + ' ₽';
+      if (ordEl) ordEl.textContent = `${m.paidOrders} / ${m.totalOrders}`;
+      if (convEl) convEl.textContent = `Конверсия в оплату: ${m.conversionRate}%`;
+      if (aovEl) aovEl.textContent = new Intl.NumberFormat('ru-RU').format(m.avgOrderValue) + ' ₽';
+      if (cliEl) cliEl.textContent = m.totalClients;
+
+      // Render Sales Chart
+      const chartEl = document.getElementById('dashSalesChart');
+      if (chartEl && Array.isArray(data.dailyStats)) {
+        if (data.dailyStats.length === 0) {
+          chartEl.innerHTML = '<div style="color: #999; font-size: 13px; margin: auto;">Нет данных за неделю</div>';
+        } else {
+          const maxRev = Math.max(...data.dailyStats.map(d => d.daily_revenue), 1000000);
+          chartEl.innerHTML = data.dailyStats.map(d => {
+            const heightPct = Math.max(12, Math.round((d.daily_revenue / maxRev) * 100));
+            const dayLabel = d.day ? d.day.slice(5) : '';
+            return `
+              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end;">
+                <span style="font-size: 10px; font-weight: 700; color: #10b981;">${d.daily_revenue > 0 ? (d.daily_revenue / 1000000).toFixed(1) + 'M' : '0'}</span>
+                <div style="width: 100%; max-width: 42px; height: ${heightPct}%; background: ${d.daily_revenue > 0 ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)' : '#e5e7eb'}; border-radius: 6px 6px 2px 2px;" title="${d.day}: ${new Intl.NumberFormat('ru-RU').format(d.daily_revenue)} ₽ (${d.orders_count} заказов)"></div>
+                <span style="font-size: 11px; color: #6a6864; font-weight: 600;">${dayLabel}</span>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Render Statuses
+      const statusesEl = document.querySelector('[data-dash-statuses]');
+      if (statusesEl && data.statusDistribution) {
+        const labels = {
+          'NEW': { text: '1. Оформлен', color: '#f59e0b', bg: '#fef3c7' },
+          'PAID': { text: '2. Оплачен', color: '#10b981', bg: '#d1fae5' },
+          'IN_PRODUCTION': { text: '3. В производстве', color: '#3b82f6', bg: '#dbeafe' },
+          'DELIVERING': { text: '4. Доставляется', color: '#8b5cf6', bg: '#ede9fe' },
+          'COMPLETED': { text: '5. Завершен', color: '#059669', bg: '#ecfdf5' },
+          'CANCELLED': { text: 'Отменен', color: '#ef4444', bg: '#fee2e2' }
+        };
+
+        statusesEl.innerHTML = Object.entries(labels).map(([stKey, info]) => {
+          const count = data.statusDistribution[stKey] || 0;
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: ${info.bg}; border-radius: 6px;">
+              <span style="font-size: 13px; font-weight: 600; color: ${info.color};">${info.text}</span>
+              <strong style="font-size: 13px; color: ${info.color};">${count}</strong>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render Recent Orders
+      const recentBody = document.querySelector('[data-dash-recent-orders]');
+      if (recentBody && Array.isArray(data.recentOrders)) {
+        if (data.recentOrders.length === 0) {
+          recentBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 16px;">Заказов пока нет</td></tr>';
+        } else {
+          recentBody.innerHTML = data.recentOrders.map(o => `
+            <tr>
+              <td><strong>#${o.order_number}</strong></td>
+              <td>${o.customer_name || 'Клиент'} (${o.customer_phone || '—'})</td>
+              <td style="font-weight: 700;">${new Intl.NumberFormat('ru-RU').format(o.total_price)} ₽</td>
+              <td>
+                <span class="badge ${o.payment_status === 'PAID' ? 'badge-success' : 'badge-warning'}">
+                  ${o.payment_status === 'PAID' ? 'ОПЛАЧЕН' : 'ОЖИДАЕТ'}
+                </span>
+              </td>
+              <td>
+                <span style="font-size: 12px; font-weight: 600;">${o.status}</span>
+              </td>
+            </tr>
+          `).join('');
+        }
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки аналитики:', err);
+    }
   }
 
   // --- CATALOG & PRICES TAB ---
@@ -876,7 +969,8 @@ const Admin = (function () {
     deleteMedia,
     toggleOrderStatus,
     updateLifecycleStatus,
-    loadOutboxTab
+    loadOutboxTab,
+    loadDashboardTab
   };
 })();
 

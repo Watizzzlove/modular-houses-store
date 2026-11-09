@@ -272,7 +272,34 @@ async function runFeatureTests() {
   assert.strictEqual(tgValidationRes.data.success, false);
   console.log('✓ Telegram endpoint correctly validates required bot token and chat ID');
 
-  console.log('\n🎉 ALL 12 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
+  console.log('13. Testing printable contract generation endpoint...');
+  const contractRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: `/api/orders/${orderId}/contract`,
+    method: 'GET'
+  });
+  assert.strictEqual(contractRes.status, 200);
+  assert.ok(typeof contractRes.data === 'string' && contractRes.data.includes('Договор поставки и спецификация'), 'Contract HTML must contain legal header');
+  assert.ok(contractRes.data.includes('ООО «МОДУЛЬ ХАУС»'), 'Contract HTML must contain company details');
+  console.log('✓ Printable contract endpoint successfully generated HTML invoice/contract');
+
+  console.log('14. Testing executive analytics KPI dashboard endpoint...');
+  const analyticsRes = await request({
+    hostname: 'localhost',
+    port: 3030,
+    path: '/api/admin/analytics',
+    method: 'GET',
+    headers: { 'Authorization': `Bearer ${adminToken}` }
+  });
+  assert.strictEqual(analyticsRes.status, 200);
+  assert.strictEqual(analyticsRes.data.success, true);
+  assert.strictEqual(typeof analyticsRes.data.metrics.totalRevenue, 'number');
+  assert.strictEqual(typeof analyticsRes.data.metrics.totalOrders, 'number');
+  assert.ok(Array.isArray(analyticsRes.data.dailyStats));
+  console.log(`✓ Analytics dashboard verified (Revenue: ${analyticsRes.data.metrics.totalRevenue} RUB, Orders: ${analyticsRes.data.metrics.totalOrders})`);
+
+  console.log('\n🎉 ALL 14 FEATURE & AUTH TESTS PASSED PERFECTLY! 🎉\n');
 }
 
 runFeatureTests().catch(err => {
